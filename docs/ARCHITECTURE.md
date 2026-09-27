@@ -10,11 +10,16 @@ AgoraTap tests an interaction model, not a production payment protocol. The app 
 
 1. **Buyer wallet UI** — seeded EURC/USDC balances, asset selection, deterministic quote logic, tap simulation, receipt and privacy explainer.
 2. **Merchant till UI** — amount and settlement selection, payment-request state, completion simulation and merchant receipts.
-3. **Domain logic** — pure TypeScript functions validate amounts, calculate quotes, create requests, complete payments and render CSV.
-4. **Persistence** — one versioned `localStorage` record. Reset restores seeded data.
-5. **PWA shell** — web manifest and generated service worker cache static app assets.
+3. **Domain logic** — pure TypeScript functions validate amounts, calculate quotes, create requests, complete payments, freeze pilot-session snapshots and render CSV.
+4. **Persistence** — one versioned `localStorage` record for the simulated buyer/merchant flow. Reset restores seeded data. Merchant-pilot sessions are held only in component memory and disappear on refresh.
+5. **Merchant readiness UI** — creates a fictional, immutable session card for local usability testing. It has no live order or payment status.
+6. **PWA shell** — web manifest and generated service worker cache static app assets.
 
-There is no network API. The buyer and merchant views share local state to make the end-to-end demo coherent.
+The app has no private GNU Taler API adapter and sends no order, authorization capability or user-entered pilot data to GNU Taler. The buyer/merchant simulation shares local state. A fixed external link opens GNU Taler's separate official public demo without query parameters or entered values; that external site is not an AgoraTap integration.
+
+## Immediate business wedge
+
+AgoraTap starts as the **merchant acceptance and checkout-integration layer**, not as an issuer, exchange, custodian or settlement provider. The first evidence product is a structured local merchant usability session with fictional value: can staff create a scenario, can a shopper understand the simulated flow, and can both understand the receipt and privacy boundary? Only measured merchant pull advances the product toward a paid integration pilot and an operator-controlled GNU Taler test environment.
 
 ## Production direction
 
@@ -71,3 +76,5 @@ No implementation of GNU Taler, NFC, offline payment, blockchain, custody, stabl
 - Prefer licensed providers over building regulated custody or fiat movement in-house.
 - Treat SEPA as an optional fiat settlement rail, not as the buyer authorization network.
 - Do not treat privacy as a way around sanctions or AML obligations.
+
+The staged resilience and decentralization roadmap is maintained in [RESILIENCE_AND_DECENTRALIZATION.md](RESILIENCE_AND_DECENTRALIZATION.md).

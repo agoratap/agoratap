@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Building2, Check, ChevronRight, CircleDollarSign,
-  Download, Fingerprint, History, Info, Landmark, Leaf, LockKeyhole, Radio,
+  Download, Fingerprint, FlaskConical, History, Info, Landmark, Leaf, LockKeyhole, Radio,
   RefreshCcw, Send, ShieldCheck, Smartphone, Store, WalletCards, Wifi,
 } from 'lucide-react'
 import { receiptsToCsv } from './lib/export'
@@ -9,8 +9,9 @@ import {
   calculateQuote, completePayment, createPaymentRequest,
   type Asset, type PaymentRequest, type Receipt, type Settlement,
 } from './lib/payments'
+import { createPilotSession, type PilotSession } from './lib/pilot'
 
-type Screen = 'home' | 'buyer' | 'merchant' | 'architecture'
+type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
 type MerchantStep = 'amount' | 'request' | 'complete' | 'receipts'
 
@@ -64,6 +65,7 @@ function App() {
         {screen === 'home' && <Home onNavigate={setScreen} />}
         {screen === 'buyer' && <Buyer data={data} setData={setData} onBack={() => setScreen('home')} />}
         {screen === 'merchant' && <Merchant data={data} setData={setData} onBack={() => setScreen('home')} />}
+        {screen === 'pilot' && <MerchantPilot onBack={() => setScreen('home')} />}
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
       <footer className="legal-footer">Prototype only · No real funds · No blockchain transactions · Not a regulated payment service</footer>
@@ -79,8 +81,8 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
       <p className="hero-copy">A working concept for payments without card-network authorization: unlinkable shopper credentials, no routine buyer identity collection within lawful low-risk thresholds, and an identified, auditable merchant.</p>
       <div className="privacy-promise"><Fingerprint size={17} /><span><strong>No routine buyer KYC is the design target.</strong> Not a current legal guarantee; production thresholds and controls require counsel and licensed partners.</span></div>
       <div className="hero-actions">
-        <button className="primary" onClick={() => onNavigate('buyer')}>Open buyer wallet <ArrowRight size={18} /></button>
-        <button className="secondary" onClick={() => onNavigate('merchant')}>Open merchant till</button>
+        <button className="primary" onClick={() => onNavigate('pilot')}>Run local merchant pilot <FlaskConical size={18} /></button>
+        <button className="secondary" onClick={() => onNavigate('merchant')}>Open local merchant demo</button>
       </div>
       <div className="honesty"><Info size={16} /><span><strong>Honest demo.</strong> Every balance, conversion and settlement is simulated locally on this device.</span></div>
     </section>
@@ -96,6 +98,11 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
         <div><span className="role-label">FOR MERCHANTS</span><h2>You stay identified. Shoppers do not.</h2><p>KYB, audit trail, EUR stablecoin or simulated SEPA Instant.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
+    </section>
+
+    <section className="pilot-offer">
+      <div><span className="section-kicker">FIRST BUSINESS WEDGE</span><h2>One merchant. One local test session. Fictional value only.</h2></div>
+      <div><p>Run a structured checkout usability session entirely in this browser. No order is sent to GNU Taler or any other service; no money, customer data, credentials, custody or production payment is involved.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=AgoraTap%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
@@ -252,12 +259,66 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
   </FlowLayout>
 }
 
+function MerchantPilot({ onBack }: { onBack: () => void }) {
+  const [amount, setAmount] = useState('12.50')
+  const [scenario, setScenario] = useState('Standard counter sale')
+  const [session, setSession] = useState<PilotSession | null>(null)
+  const [completed, setCompleted] = useState(false)
+  const [error, setError] = useState('')
+
+  const startSession = () => {
+    try {
+      setSession(createPilotSession({ amount, scenario }))
+      setCompleted(false)
+      setError('')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not start the local session')
+    }
+  }
+
+  const startAnother = () => {
+    setSession(null)
+    setCompleted(false)
+    setError('')
+  }
+
+  return <FlowLayout title="Merchant pilot" onBack={onBack} progress={100} wide>
+    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Test the checkout.<br />Do not pretend it is live.</h2><p>This screen creates a fictional merchant session in this browser. It makes no network request and does not create, inspect or pay a GNU Taler order.</p></div>
+    <div className="protocol-grid">
+      <section className="protocol-form">
+        {!session ? <>
+          <label><span>FICTIONAL EUR AMOUNT</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+          <label><span>SCENARIO LABEL — NO CUSTOMER DETAILS</span><input value={scenario} maxLength={80} onChange={(event) => setScenario(event.target.value)} /></label>
+          <button className="primary full" onClick={startSession}>Start local test session <ArrowRight size={18} /></button>
+        </> : <>
+          <div className="sandbox-boundary"><Check size={18} /><div><strong>Session facts locked</strong><p>The amount, label, ID and start time below are an immutable snapshot. Start another session to change them.</p></div></div>
+          <button className="secondary full" onClick={startAnother}>Start another session</button>
+        </>}
+        <div className="sandbox-boundary"><FlaskConical size={18} /><div><strong>Boundary</strong><p>All entered values stay in component memory and are discarded on refresh. Nothing is sent to GNU Taler, AgoraTap or a merchant backend.</p></div></div>
+        <a className="text-link center" href="https://demo.taler.net/" target="_blank" rel="noreferrer noopener">Visit GNU Taler’s official public demo <ArrowRight size={16} /></a>
+        <p className="fine-print">The external link is fixed and sends none of the values entered above. GNU Taler operates that separate site under its own terms.</p>
+        {error && <div className="protocol-error"><Info size={16} />{error}</div>}
+      </section>
+      <section className="protocol-result" aria-live="polite">
+        {!session && <div className="protocol-empty"><Radio size={28} /><h3>No local session yet</h3><p>Enter fictional test facts to create an immutable session card.</p></div>}
+        {session && <>
+          <div className={`live-status ${completed ? 'paid' : ''}`}><span />{completed ? 'SCENARIO RECORDED' : 'LOCAL SIMULATION · READY'}</div>
+          <div className="live-amount"><small>FICTIONAL AMOUNT</small><strong>{money(session.amountMinor / 100)}</strong></div>
+          <dl><div><dt>Scenario</dt><dd>{session.scenario}</dd></div><div><dt>Session ID</dt><dd>{session.id}</dd></div><div><dt>Started</dt><dd>{when(session.startedAt)}</dd></div><div><dt>Environment</dt><dd>LOCAL SIMULATION</dd></div></dl>
+          {!completed && <button className="primary full" onClick={() => setCompleted(true)}>Record scenario complete <Check size={18} /></button>}
+          <div className="sandbox-boundary"><Info size={18} /><div><strong>What this proves</strong><p>Only that the merchant-facing copy and task flow can be tested. It proves no protocol integration, payment, settlement, demand or regulatory status.</p></div></div>
+        </>}
+      </section>
+    </div>
+  </FlowLayout>
+}
+
 function Architecture({ onBack }: { onBack: () => void }) {
   return <FlowLayout title="System map" onBack={onBack} progress={100} wide>
     <div className="architecture-intro"><span className="section-kicker">PRODUCTION DIRECTION</span><h2>Unlinkable at the till.<br />Identified at the merchant.</h2><p>Core differentiator: no routine buyer KYC or identity collection within lawful low-risk thresholds. The merchant is KYB-identified and auditable. This is a design target requiring counsel and licensed partners, not a guarantee of this demo.</p></div>
     <div className="system-map">
       <article><span>01</span><WalletCards /><h3>Buyer wallet</h3><p>Holds unlinkable payment tokens. No reusable shopper ID at checkout.</p><small>BUYER DEVICE</small></article><i>→</i>
-      <article className="core"><span>02</span><Radio /><h3>AgoraTap exchange</h3><p>Validates one-time value without building a buyer transaction graph.</p><small>OPEN PROTOCOL</small></article><i>→</i>
+      <article className="core"><span>02</span><Radio /><h3>Licensed issuer / GNU Taler exchange</h3><p>Validates one-time value without building a buyer transaction graph. AgoraTap integrates; it does not operate this regulated layer.</p><small>OPEN PROTOCOL · PARTNER LAYER</small></article><i>→</i>
       <article><span>03</span><Store /><h3>Merchant till</h3><p>Identified merchant receives proof and settlement, not a shopper profile.</p><small>MERCHANT DEVICE</small></article>
     </div>
     <div className="rail-map"><div><Building2 /><span><small>REGULATED EDGE</small><strong>Licensed CASP / EMI</strong></span></div><div><Landmark /><span><small>FIAT SETTLEMENT</small><strong>SEPA Instant partner</strong></span></div></div>

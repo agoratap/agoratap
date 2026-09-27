@@ -27,6 +27,14 @@ npm run preview
 
 Reset all saved demo balances, requests, and receipts with the reset icon in the header. State is stored only in browser `localStorage` under `agoratap-demo-v1`.
 
+## Evidence mode
+
+AgoraTap is a **local product and merchant-readiness simulation**. Buyer balances, quotes, NFC-style interaction, settlement choices, pilot-session facts and receipts are fictional browser state. The app does not call a GNU Taler merchant API, create an order, hold a credential or prove protocol connectivity.
+
+The Merchant pilot screen captures an immutable local snapshot—fictional amount, scenario label, session ID and start time—so the displayed facts cannot drift with later input. It also links to GNU Taler's separate official public demo using a fixed URL that includes none of the entered values.
+
+The immediate business wedge is **merchant payment-acceptance readiness and workflow evidence**: run a structured local checkout usability session, record completion and friction, and earn the right to discuss a paid integration pilot. GNU Taler integration is future work that requires an operator-controlled test environment and a server-side boundary for private APIs. AgoraTap does not offer custody, issuance, exchange or settlement.
+
 ## What the MVP demonstrates
 
 - **Buyer:** seeded EURC/USDC balances, demo funding, asset selection, explicit rate and fee quote, simulated NFC tap, receipt, and privacy explainer (unlinkable tokens vs Visa-style crypto cards).
@@ -63,7 +71,7 @@ Production edges: licensed CASP/EMI  → privacy-preserving issuer/exchange
                   → merchant acquirer (KYB) → EUR stablecoin or SEPA Instant
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for trust boundaries, threat model, and the production direction.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for trust boundaries and production direction, and [docs/RESILIENCE_AND_DECENTRALIZATION.md](docs/RESILIENCE_AND_DECENTRALIZATION.md) for the lawful-resistance, jurisdiction-portability and staged decentralization path.
 
 ## Boundaries
 
