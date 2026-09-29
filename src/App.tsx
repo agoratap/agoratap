@@ -10,6 +10,7 @@ import {
   type Asset, type PaymentRequest, type Receipt, type Settlement,
 } from './lib/payments'
 import { createPilotSession, type PilotSession } from './lib/pilot'
+import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 
 type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
@@ -40,6 +41,11 @@ function loadState(): DemoState {
 }
 
 const money = (amount: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount)
+const downloadFile = (content: string, type: string, filename: string) => {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob); const link = document.createElement('a')
+  link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url)
+}
 const when = (date: string) => new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(new Date(date))
 
 function DemoLabel() { return <span className="demo-label"><span />DEMO · SIMULATED</span> }
@@ -218,11 +224,7 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
     const receipt = completePayment(request, 'EURC')
     setData({ ...data, request: { ...request, status: 'completed' }, receipts: [receipt, ...data.receipts] }); setStep('complete')
   }
-  const download = () => {
-    const blob = new Blob([receiptsToCsv(data.receipts)], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob); const link = document.createElement('a')
-    link.href = url; link.download = 'agoratap-demo-receipts.csv'; link.click(); URL.revokeObjectURL(url)
-  }
+  const download = () => downloadFile(receiptsToCsv(data.receipts), 'text/csv', 'agoratap-demo-receipts.csv')
 
   if (step === 'receipts') return <FlowLayout title="Daily receipts" onBack={() => setStep('amount')} progress={100}>
     <div className="audit-head"><div><span>TODAY · DEMO</span><h2>{money(data.receipts.reduce((sum, receipt) => sum + receipt.amount, 0))}</h2><p>{data.receipts.length} completed payments</p></div><button className="secondary compact" onClick={download}><Download size={16} /> Export CSV</button></div>
@@ -263,22 +265,36 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
   const [amount, setAmount] = useState('12.50')
   const [scenario, setScenario] = useState('Standard counter sale')
   const [session, setSession] = useState<PilotSession | null>(null)
-  const [completed, setCompleted] = useState(false)
+  const [completedAt, setCompletedAt] = useState<string | null>(null)
+  const completed = completedAt !== null
   const [error, setError] = useState('')
 
   const startSession = () => {
     try {
       setSession(createPilotSession({ amount, scenario }))
-      setCompleted(false)
+      setCompletedAt(null)
       setError('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not start the local session')
     }
   }
 
+  const exportReport = () => {
+    if (!session) return
+    try {
+      const report = buildPilotSessionReport(session, { completedAt })
+      const base = `agoratap-DEMO-pilot-session-${session.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36)}`
+      downloadFile(pilotReportToJson(report), 'application/json', `${base}.json`)
+      downloadFile(pilotReportToCsv(report), 'text/csv', `${base}.csv`)
+      setError('')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not build the local session report')
+    }
+  }
+
   const startAnother = () => {
     setSession(null)
-    setCompleted(false)
+    setCompletedAt(null)
     setError('')
   }
 
@@ -305,7 +321,9 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
           <div className={`live-status ${completed ? 'paid' : ''}`}><span />{completed ? 'SCENARIO RECORDED' : 'LOCAL SIMULATION · READY'}</div>
           <div className="live-amount"><small>FICTIONAL AMOUNT</small><strong>{money(session.amountMinor / 100)}</strong></div>
           <dl><div><dt>Scenario</dt><dd>{session.scenario}</dd></div><div><dt>Session ID</dt><dd>{session.id}</dd></div><div><dt>Started</dt><dd>{when(session.startedAt)}</dd></div><div><dt>Environment</dt><dd>LOCAL SIMULATION</dd></div></dl>
-          {!completed && <button className="primary full" onClick={() => setCompleted(true)}>Record scenario complete <Check size={18} /></button>}
+          {!completed && <button className="primary full" onClick={() => setCompletedAt(new Date().toISOString())}>Record scenario complete <Check size={18} /></button>}
+          <button className="secondary full" onClick={exportReport}><Download size={17} /> Export session report</button>
+          <p className="fine-print"><strong>{PILOT_REPORT_DEMO_LABEL}.</strong> Downloads a JSON and a CSV file built in this browser from the facts above. Nothing is uploaded; friction notes are not captured by this version.</p>
           <div className="sandbox-boundary"><Info size={18} /><div><strong>What this proves</strong><p>Only that the merchant-facing copy and task flow can be tested. It proves no protocol integration, payment, settlement, demand or regulatory status.</p></div></div>
         </>}
       </section>

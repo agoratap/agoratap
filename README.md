@@ -33,6 +33,10 @@ AgoraTap is a **local product and merchant-readiness simulation**. Buyer balance
 
 The Merchant pilot screen captures an immutable local snapshot—fictional amount, scenario label, session ID and start time—so the displayed facts cannot drift with later input. It also links to GNU Taler's separate official public demo using a fixed URL that includes none of the entered values.
 
+### Export session report
+
+Once a pilot session is started, **Export session report** on the Merchant pilot screen downloads two files built entirely in the browser from local state: `agoratap-DEMO-pilot-session-<id>.json` and a readable field/value `.csv`. Both carry the label **"DEMO - fictional data, no real funds, not legal/regulatory evidence"**, a `generatedAt` timestamp, the snapshot facts (session ID, scenario label, fictional amount, start time, environment), and completion status/time/duration if "Record scenario complete" was pressed. Friction notes are not captured by this version and are marked as not recorded. The export makes no network request, is unsigned, and contains no buyer or personal data; the CSV neutralises spreadsheet formulas in the scenario label. Some browsers ask permission before allowing the second download.
+
 The immediate business wedge is **merchant payment-acceptance readiness and workflow evidence**: run a structured local checkout usability session, record completion and friction, and earn the right to discuss a paid integration pilot. GNU Taler integration is future work that requires an operator-controlled test environment and a server-side boundary for private APIs. AgoraTap does not offer custody, issuance, exchange or settlement.
 
 ## What the MVP demonstrates
@@ -41,7 +45,7 @@ The immediate business wedge is **merchant payment-acceptance readiness and work
 - **Merchant:** EUR amount entry, per-sale settlement choice, payment request, simulated completion, daily receipt list, and DEMO-marked CSV audit export of *merchant* settlement — not a buyer identity trail.
 - **Explainer:** product thesis, threat model, and architecture/regulatory boundary map.
 - **PWA:** installable manifest and service worker generated with `vite-plugin-pwa`.
-- **Logic:** tested quote calculation, validation, payment lifecycle, and CSV export.
+- **Logic:** tested quote calculation, validation, payment lifecycle, CSV export, and pilot session report (JSON/CSV) building.
 
 ## Thesis
 

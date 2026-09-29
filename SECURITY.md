@@ -8,7 +8,7 @@ The product *aims* at unlinkable buyer credentials and no routine buyer KYC in-t
 
 ## Data handling
 
-Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. Reset clears the AgoraTap storage key; browser/download history and downloaded files are outside the app's control.
+Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. The Merchant pilot session report (JSON/CSV) is likewise generated locally, unsigned, DEMO-labelled, and not legal or regulatory evidence. Reset clears the AgoraTap storage key; browser/download history and downloaded files are outside the app's control.
 
 ## Threat model (production target)
 
