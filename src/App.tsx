@@ -9,6 +9,7 @@ import {
   calculateQuote, completePayment, createPaymentRequest,
   type Asset, type PaymentRequest, type Receipt, type Settlement,
 } from './lib/payments'
+import { FRICTION_TAGS, createFrictionCapture, timing, type FrictionTag } from './lib/friction'
 import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 
@@ -261,28 +262,56 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
   </FlowLayout>
 }
 
+const FRICTION_LABELS: Record<FrictionTag, string> = {
+  amount_unclear: 'Amount unclear',
+  settlement_unclear: 'Settlement unclear',
+  tap_confusing: 'Tap confusing',
+  receipt_unclear: 'Receipt unclear',
+  demo_label_missed: 'Demo label missed',
+  too_many_steps: 'Too many steps',
+  copy_legal_heavy: 'Copy too legal-heavy',
+  none: 'No friction',
+}
+
 function MerchantPilot({ onBack }: { onBack: () => void }) {
   const [amount, setAmount] = useState('12.50')
   const [scenario, setScenario] = useState('Standard counter sale')
   const [session, setSession] = useState<PilotSession | null>(null)
   const [completedAt, setCompletedAt] = useState<string | null>(null)
+  const [frictionTags, setFrictionTags] = useState<FrictionTag[]>([])
+  const [stepStartedAt, setStepStartedAt] = useState<string | null>(null)
   const completed = completedAt !== null
   const [error, setError] = useState('')
 
   const startSession = () => {
     try {
-      setSession(createPilotSession({ amount, scenario }))
+      const next = createPilotSession({ amount, scenario })
+      setSession(next)
       setCompletedAt(null)
+      setFrictionTags([])
+      setStepStartedAt(next.startedAt)
       setError('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not start the local session')
     }
   }
 
+  const toggleFriction = (tag: FrictionTag) => {
+    setFrictionTags((current) => {
+      if (tag === 'none') return current.includes('none') ? [] : ['none']
+      const withoutNone = current.filter((item) => item !== 'none')
+      return withoutNone.includes(tag) ? withoutNone.filter((item) => item !== tag) : [...withoutNone, tag]
+    })
+  }
+
   const exportReport = () => {
     if (!session) return
     try {
-      const report = buildPilotSessionReport(session, { completedAt })
+      const endedAt = new Date()
+      const startedAt = new Date(stepStartedAt ?? session.startedAt)
+      const timings = [timing('pilot_session', startedAt, endedAt)]
+      const friction = createFrictionCapture({ tags: frictionTags, timings })
+      const report = buildPilotSessionReport(session, { completedAt }, endedAt, friction)
       const base = `agoratap-DEMO-pilot-session-${session.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36)}`
       downloadFile(pilotReportToJson(report), 'application/json', `${base}.json`)
       downloadFile(pilotReportToCsv(report), 'text/csv', `${base}.csv`)
@@ -295,6 +324,8 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
   const startAnother = () => {
     setSession(null)
     setCompletedAt(null)
+    setFrictionTags([])
+    setStepStartedAt(null)
     setError('')
   }
 
@@ -322,8 +353,19 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
           <div className="live-amount"><small>FICTIONAL AMOUNT</small><strong>{money(session.amountMinor / 100)}</strong></div>
           <dl><div><dt>Scenario</dt><dd>{session.scenario}</dd></div><div><dt>Session ID</dt><dd>{session.id}</dd></div><div><dt>Started</dt><dd>{when(session.startedAt)}</dd></div><div><dt>Environment</dt><dd>LOCAL SIMULATION</dd></div></dl>
           {!completed && <button className="primary full" onClick={() => setCompletedAt(new Date().toISOString())}>Record scenario complete <Check size={18} /></button>}
+          <fieldset className="friction-set">
+            <legend>Friction tags — fixed choices, no customer data</legend>
+            <div className="friction-tags">
+              {FRICTION_TAGS.map((tag) => (
+                <label key={tag} className={frictionTags.includes(tag) ? 'selected' : ''}>
+                  <input type="checkbox" checked={frictionTags.includes(tag)} onChange={() => toggleFriction(tag)} />
+                  {FRICTION_LABELS[tag]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <button className="secondary full" onClick={exportReport}><Download size={17} /> Export session report</button>
-          <p className="fine-print"><strong>{PILOT_REPORT_DEMO_LABEL}.</strong> Downloads a JSON and a CSV file built in this browser from the facts above. Nothing is uploaded; friction notes are not captured by this version.</p>
+          <p className="fine-print"><strong>{PILOT_REPORT_DEMO_LABEL}.</strong> Downloads a JSON and a CSV file built in this browser from the facts above, including closed-choice friction tags and per-step timing. Nothing is uploaded; no free-text or customer data is stored.</p>
           <div className="sandbox-boundary"><Info size={18} /><div><strong>What this proves</strong><p>Only that the merchant-facing copy and task flow can be tested. It proves no protocol integration, payment, settlement, demand or regulatory status.</p></div></div>
         </>}
       </section>

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createFrictionCapture, timing } from './friction'
 import { createPilotSession } from './pilot'
 import { buildPilotSessionReport, csvCell, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './pilotReport'
 
@@ -13,6 +14,7 @@ describe('buildPilotSessionReport', () => {
   it('includes the snapshot, completion, generated-at time and demo label', () => {
     const report = buildPilotSessionReport(session, { completedAt: '2026-09-27T12:03:30.000Z' }, generatedAt)
     expect(report.label).toBe('DEMO - fictional data, no real funds, not legal/regulatory evidence')
+    expect(report.schemaVersion).toBe(2)
     expect(report.generatedAt).toBe('2026-09-27T12:10:00.000Z')
     expect(report.session).toEqual({
       id: 'pilot-123',
@@ -25,6 +27,7 @@ describe('buildPilotSessionReport', () => {
     })
     expect(report.completion).toEqual({ status: 'completed', completedAt: '2026-09-27T12:03:30.000Z', durationSeconds: 210 })
     expect(report.friction.recorded).toBe(false)
+    expect(report.friction.tags).toEqual([])
     expect(Object.isFrozen(report)).toBe(true)
     expect(Object.isFrozen(report.session)).toBe(true)
   })
@@ -39,9 +42,21 @@ describe('buildPilotSessionReport', () => {
       .toThrow('Completion time must be a valid time after the session start')
   })
 
-  it('contains no fields beyond the local snapshot and demo metadata', () => {
+  it('contains no fields beyond the local snapshot, friction capture and demo metadata', () => {
     const report = buildPilotSessionReport(session, { completedAt: null }, generatedAt)
     expect(Object.keys(report).sort()).toEqual(['boundaries', 'completion', 'friction', 'generatedAt', 'label', 'reportType', 'schemaVersion', 'session'])
+  })
+
+  it('embeds closed-choice friction tags and step timings without free text', () => {
+    const friction = createFrictionCapture({
+      tags: ['too_many_steps', 'copy_legal_heavy'],
+      timings: [timing('start_session', new Date('2026-09-27T12:00:00Z'), new Date('2026-09-27T12:00:08Z'))],
+    })
+    const report = buildPilotSessionReport(session, { completedAt: '2026-09-27T12:03:30.000Z' }, generatedAt, friction)
+    expect(report.friction.recorded).toBe(true)
+    expect(report.friction.tags).toEqual(['too_many_steps', 'copy_legal_heavy'])
+    expect(report.friction.timings[0].durationMs).toBe(8000)
+    expect(JSON.stringify(report.friction)).not.toMatch(/note|customer|email/i)
   })
 })
 
@@ -63,6 +78,20 @@ describe('pilot report serialisation', () => {
     expect(lines).toContain('fictional_amount_eur,12.50')
     expect(lines).toContain('completion_status,completed')
     expect(lines).toContain('duration_seconds,210')
+    expect(lines).toContain('friction_recorded,false')
+    expect(lines).toContain('friction_tags,')
+  })
+
+  it('writes friction tags and step timings into the CSV', () => {
+    const friction = createFrictionCapture({
+      tags: ['tap_confusing'],
+      timings: [timing('tap', new Date('2026-09-27T12:00:00Z'), new Date('2026-09-27T12:00:03Z'))],
+    })
+    const csv = pilotReportToCsv(buildPilotSessionReport(session, { completedAt: null }, generatedAt, friction))
+    expect(csv).toContain('friction_recorded,true')
+    expect(csv).toContain('friction_tags,tap_confusing')
+    expect(csv).toContain('friction_step_1,tap')
+    expect(csv).toContain('friction_step_1_duration_ms,3000')
   })
 
   it('escapes commas, quotes and spreadsheet formulas in the scenario label', () => {

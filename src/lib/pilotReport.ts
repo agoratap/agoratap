@@ -1,3 +1,5 @@
+import type { FrictionCapture } from './friction'
+import { EMPTY_FRICTION } from './friction'
 import type { PilotSession } from './pilot'
 
 export const PILOT_REPORT_DEMO_LABEL = 'DEMO - fictional data, no real funds, not legal/regulatory evidence'
@@ -10,7 +12,7 @@ export interface PilotCompletion {
 export interface PilotSessionReport {
   readonly label: typeof PILOT_REPORT_DEMO_LABEL
   readonly reportType: 'agoratap-merchant-pilot-session'
-  readonly schemaVersion: 1
+  readonly schemaVersion: 2
   readonly generatedAt: string
   readonly session: {
     readonly id: string
@@ -26,10 +28,7 @@ export interface PilotSessionReport {
     readonly completedAt: string | null
     readonly durationSeconds: number | null
   }
-  readonly friction: {
-    readonly recorded: false
-    readonly note: string
-  }
+  readonly friction: FrictionCapture
   readonly boundaries: readonly string[]
 }
 
@@ -45,6 +44,7 @@ export function buildPilotSessionReport(
   session: PilotSession,
   completion: PilotCompletion,
   generatedAt: Date = new Date(),
+  friction: FrictionCapture = EMPTY_FRICTION,
 ): PilotSessionReport {
   const completedAt = completion.completedAt
   let durationSeconds: number | null = null
@@ -57,7 +57,7 @@ export function buildPilotSessionReport(
   return Object.freeze({
     label: PILOT_REPORT_DEMO_LABEL,
     reportType: 'agoratap-merchant-pilot-session' as const,
-    schemaVersion: 1 as const,
+    schemaVersion: 2 as const,
     generatedAt: generatedAt.toISOString(),
     session: Object.freeze({
       id: session.id,
@@ -73,10 +73,7 @@ export function buildPilotSessionReport(
       completedAt,
       durationSeconds,
     }),
-    friction: Object.freeze({
-      recorded: false as const,
-      note: 'This app version does not capture friction notes; record observations separately without customer details.',
-    }),
+    friction,
     boundaries: Object.freeze([...BOUNDARIES]),
   })
 }
@@ -108,7 +105,13 @@ export function pilotReportToCsv(report: PilotSessionReport): string {
     ['completed_at', report.completion.completedAt],
     ['duration_seconds', report.completion.durationSeconds],
     ['friction_recorded', report.friction.recorded],
-    ['friction_note', report.friction.note],
+    ['friction_tags', report.friction.tags.join('|') || null],
+    ...report.friction.timings.flatMap((row, index): Array<[string, string | number | boolean | null]> => [
+      [`friction_step_${index + 1}`, row.step],
+      [`friction_step_${index + 1}_started`, row.startedAt],
+      [`friction_step_${index + 1}_ended`, row.endedAt],
+      [`friction_step_${index + 1}_duration_ms`, row.durationMs],
+    ]),
     ...report.boundaries.map((boundary, index): [string, string] => [`boundary_${index + 1}`, boundary]),
   ]
   return `${['field,value', ...rows.map(([field, value]) => `${field},${csvCell(value)}`)].join('\n')}\n`
