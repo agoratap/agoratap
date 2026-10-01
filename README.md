@@ -1,10 +1,44 @@
 # AgoraTap
 
-A mobile-first PWA prototype for card-network-free everyday payments. AgoraTap explores a GNU Taler-inspired interaction: a buyer spends unlinkable payment tokens without routine identity collection, and an identified merchant settles in EUR stablecoin or simulated SEPA Instant.
+AgoraTap is an early, unfinished project. This page says only what the code in this repository does today. Each statement in the "What the code does today" table points to a test that checks it. Anything not in that table should be read as not done.
 
-**Core differentiator:** no routine buyer KYC. Merchant remains identified and auditable. Buyer privacy is a design target requiring counsel and licensed partners — not a current legal guarantee.
+> **Nothing here handles real money.** There is no server, no account system, no custody and no service run by the authors. Do not send real funds because of anything you read in this repository.
 
-> **DEMO ONLY.** No real funds move. No blockchain transaction, banking instruction, identity check, or regulatory approval exists in this repository.
+## What the code does today
+
+| # | What the code does | Checked by |
+|---|---|---|
+| 1 | The browser demo keeps its data in the browser's `localStorage` (key `agoratap-demo-v1`) and its source contains no `fetch`, XHR, WebSocket or web3-library calls. (The installable-app service worker only caches the app's own files. The demo has one outbound link, to GNU Taler's public demo; nothing is sent with it.) | `src/lib/readmeClaims.test.ts` → "app source makes no network calls" |
+| 2 | `src/lib/chainRequest.ts` turns a euro price into an exact EURC or USDC amount on Base (EURC is the default, no exchange rate needed). | `src/lib/chainRequest.test.ts` → "converts EUR to atomic USDC", "defaults to EURC: merchant is asked for the euro amount with no exchange rate" |
+| 3 | It gives two open requests for the same price different exact amounts (base amount plus a tag of 1 to 9999 micro-units). | "gives two customers paying the same price different exact amounts" |
+| 4 | It builds an EIP-681 payment link addressed to the merchant's own address. | "builds an EIP-681 USDC transfer URI with chain id" |
+| 5 | Given a list of transfers that you supply, it reports `matched`, `unpaid` or `ambiguous` by exact amount and recipient. Two payments of the same amount are reported as ambiguous, never as paid. | "tells which payment belongs to which order", "flags a duplicate payment of the exact same amount as ambiguous, never as paid", "ignores payments to other addresses" |
+| 6 | An offer can list several accepted assets. Paying in two different assets is reported as ambiguous. The code does no conversion. | "offer: merchant accepts several assets, buyer pays in the one they hold, no conversion by us", "offer: payment in two different assets is ambiguous, not paid" |
+| 7 | It rejects invalid addresses and zero or negative amounts. | "rejects bad addresses and amounts", "offer: rejects empty or duplicated asset lists" |
+| 8 | `chainRequest.ts` has no private key, no seed phrase, no fee and no network call. | `src/lib/readmeClaims.test.ts` → "chainRequest has no keys, no fee and no network access" |
+| 9 | The session report export is built in the browser, is labelled as demo data, and carries no free-text or personal fields. | `src/lib/pilotReport.test.ts` → "includes the snapshot, completion, generated-at time and demo label", "contains no fields beyond the local snapshot, friction capture and demo metadata" |
+
+Run all checks: `npm ci && npm test`.
+
+## What we do not do yet
+
+- The browser demo screens are **not connected** to `chainRequest.ts`. The buyer and merchant screens show fictional balances and fictional receipts.
+- Nothing reads the blockchain. `matchRequest` only compares a list you give it. How that list is obtained is not built.
+- No confirmation rule exists. A payment is not checked for finality or reorgs.
+- Matching by exact amount can be fooled: transfers on a public chain can be made by anyone, including a third party sending the same amount. Do not treat "matched" as proof of payment from a particular person.
+- No screening of addresses against sanctions lists exists.
+- No unlinkable payments, no tokens, no GNU Taler integration. The text in the demo that mentions unlinkable payments describes a design goal that is not implemented.
+- No custody, issuance, exchange, fiat settlement or bank connection of any kind.
+- No audit, no security review, no legal review. No lawyer has signed off on anything here.
+- The authors have not chosen how, or whether, this project will make money.
+
+## Licence
+
+No licence is granted at the moment. The code is visible but all rights are reserved until a licence is chosen. If you want to use it, ask first.
+
+## Legal and risk
+
+This is software under development, not a payment service, and not legal, tax or financial advice. Whether and how any such software may be offered depends on the law where it is used. That question is open and is being worked on with counsel; this repository claims no answer to it.
 
 ## Run locally
 
@@ -12,86 +46,15 @@ Requirements: Node.js 22+ and npm.
 
 ```bash
 npm ci
-npm run dev
-```
-
-Open the URL printed by Vite (normally `http://localhost:5173`).
-
-Verification:
-
-```bash
+npm run dev       # open the URL Vite prints
 npm test
 npm run build
-npm run preview
 ```
 
-Reset all saved demo balances, requests, and receipts with the reset icon in the header. State is stored only in browser `localStorage` under `agoratap-demo-v1`.
+State is stored only in your browser. The reset icon in the header clears it.
 
-## Evidence mode
+## More
 
-AgoraTap is a **local product and merchant-readiness simulation**. Buyer balances, quotes, NFC-style interaction, settlement choices, pilot-session facts and receipts are fictional browser state. The app does not call a GNU Taler merchant API, create an order, hold a credential or prove protocol connectivity.
-
-The Merchant pilot screen captures an immutable local snapshot—fictional amount, scenario label, session ID and start time—so the displayed facts cannot drift with later input. It also links to GNU Taler's separate official public demo using a fixed URL that includes none of the entered values.
-
-### Export session report
-
-Once a pilot session is started, **Export session report** on the Merchant pilot screen downloads two files built entirely in the browser from local state: `agoratap-DEMO-pilot-session-<id>.json` and a readable field/value `.csv`. Both carry the label **"DEMO - fictional data, no real funds, not legal/regulatory evidence"**, a `generatedAt` timestamp, the snapshot facts (session ID, scenario label, fictional amount, start time, environment), completion status/time/duration if "Record scenario complete" was pressed, closed-choice friction tags, and per-step timing. There is no free-text field and no customer data. The export makes no network request, is unsigned, and contains no buyer or personal data; the CSV neutralises spreadsheet formulas in the scenario label. Some browsers ask permission before allowing the second download.
-
-The immediate business wedge is **merchant payment-acceptance readiness and workflow evidence**: run a structured local checkout usability session, record completion and friction, and earn the right to discuss a paid integration pilot. GNU Taler integration is future work that requires an operator-controlled test environment and a server-side boundary for private APIs. AgoraTap does not offer custody, issuance, exchange or settlement.
-
-## What the MVP demonstrates
-
-- **Buyer:** seeded EURC/USDC balances, demo funding, asset selection, explicit rate and fee quote, simulated NFC tap, receipt, and privacy explainer (unlinkable tokens vs Visa-style crypto cards).
-- **Merchant:** EUR amount entry, per-sale settlement choice, payment request, simulated completion, daily receipt list, and DEMO-marked CSV audit export of *merchant* settlement — not a buyer identity trail.
-- **Explainer:** product thesis, threat model, and architecture/regulatory boundary map.
-- **PWA:** installable manifest and service worker generated with `vite-plugin-pwa`.
-- **Logic:** tested quote calculation, validation, payment lifecycle, CSV export, and pilot session report (JSON/CSV) building with closed-choice friction tags and per-step timing.
-
-## Thesis
-
-Everyday payments should not require the buyer to present a reusable identity or card credential. Card authorization, merchant acceptance, buyer privacy, and fiat settlement do not need to be one indivisible system.
-
-AgoraTap’s design target:
-
-- **Buyer:** unlinkable one-time payment credentials/tokens. No routine identity collection within lawful risk/value thresholds.
-- **Merchant:** KYB-identified, auditable, chooses EUR stablecoin or SEPA Instant settlement via licensed partners.
-- **Network:** no card-network authorization at checkout.
-
-This is **not** a Visa crypto card. Crypto cards still authorize through a card network; the network (and often the acquirer) can build a buyer transaction graph. AgoraTap aims for no card network, no merchant-side buyer profiling, and payments that do not link together.
-
-Removing card-network authorization does **not** remove regulation, merchant KYB, sanctions/AML at lawful boundaries, or fiat rails. **SEPA remains for fiat settlement.** Privacy is not sanctions or AML evasion.
-
-## Architecture
-
-The prototype is deliberately local:
-
-```text
-Buyer UI ── one-time demo payment proof ──> Merchant UI
-    │                                           │
-localStorage                               localStorage / CSV
-                                           (merchant audit, not buyer ID)
-
-Production edges: licensed CASP/EMI  → privacy-preserving issuer/exchange
-                  → merchant acquirer (KYB) → EUR stablecoin or SEPA Instant
-```
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for trust boundaries and production direction, and [docs/RESILIENCE_AND_DECENTRALIZATION.md](docs/RESILIENCE_AND_DECENTRALIZATION.md) for the lawful-resistance, jurisdiction-portability and staged decentralization path.
-
-## Boundaries
-
-This is an interaction and product-thesis prototype, not a payment system. It does not implement GNU Taler cryptography, custody, stablecoin transfers, NFC hardware, identity verification, AML/sanctions controls, fraud controls, bank connectivity, or final settlement. It makes no claim of regulatory approval or guaranteed anonymity.
-
-A lawful production path would require, at minimum:
-
-- **merchant KYC/KYB** and ongoing monitoring (merchant stays identified);
-- **buyer privacy within lawful thresholds** — no routine buyer identity collection for everyday low-risk spend; not a guarantee that identity is never collected above those thresholds or under legal process;
-- licensed CASP/EMI/payment partners for custody, issuance, exchange and money movement;
-- sanctions/AML controls designed so they do not recreate a merchant-visible buyer profile;
-- security, safeguarding, operational-resilience and consumer-protection programs;
-- no card-network authorization at checkout, while recognizing that **SEPA remains for fiat settlement**.
-
-See [docs/REGULATORY_BOUNDARIES.md](docs/REGULATORY_BOUNDARIES.md), [SECURITY.md](SECURITY.md), and [docs/VALIDATION_PLAN.md](docs/VALIDATION_PLAN.md).
-
-## Technology
-
-Vite, React, TypeScript, Vitest, Lucide, and `vite-plugin-pwa`. CI runs `npm ci`, `npm test`, and `npm run build` on every push and pull request.
+- [docs/CORE_RULE.md](docs/CORE_RULE.md): the rules that protect the project's core.
+- [docs/REGULATORY_BOUNDARIES.md](docs/REGULATORY_BOUNDARIES.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): current design notes (rewritten for the non-custodial model; still working documents, not statements of legal position).
+- [SECURITY.md](SECURITY.md)
