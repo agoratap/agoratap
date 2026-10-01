@@ -1,80 +1,62 @@
 # Architecture
 
+Status: rewritten 2026-10-01 to the non-custodial model. Earlier text described an issuer/exchange layer with a licensed CASP/EMI and KYB-identified merchants; that is no longer the design.
+
 ## Purpose
 
-AgoraTap tests an interaction model, not a production payment protocol. The app is a single React PWA. All state and every transition are local and simulated.
+AgoraTap is a common language for **offer → authorisation → payment → proof** between two parties who have already agreed on a trade. It moves nothing itself.
 
-**Product invariant:** the merchant is identified and auditable; the buyer spends unlinkable payment credentials and should not undergo routine identity collection within lawful risk/value thresholds. That invariant is a design target. This repository does not implement the cryptography or legal controls that would make it real.
+**Product invariant:** the buyer pays from their own wallet directly to the merchant's address, in an asset they choose from the merchant's accepted list. AgoraTap holds no keys, holds no funds, converts nothing, relays nothing.
 
-## Prototype components
+## What exists today [FACT]
 
-1. **Buyer wallet UI** — seeded EURC/USDC balances, asset selection, deterministic quote logic, tap simulation, receipt and privacy explainer.
-2. **Merchant till UI** — amount and settlement selection, payment-request state, completion simulation and merchant receipts.
-3. **Domain logic** — pure TypeScript functions validate amounts, calculate quotes, create requests, complete payments, freeze pilot-session snapshots and render CSV.
-4. **Persistence** — one versioned `localStorage` record for the simulated buyer/merchant flow. Reset restores seeded data. Merchant-pilot sessions are held only in component memory and disappear on refresh.
-5. **Merchant readiness UI** — creates a fictional, immutable session card for local usability testing. It has no live order or payment status.
-6. **PWA shell** — web manifest and generated service worker cache static app assets.
+1. **Local demo (React/Vite PWA)** — simulated buyer/merchant flow, one versioned `localStorage` record (`agoratap-demo-v1`), merchant-readiness session in memory only. No network calls.
+2. **Request library `src/lib/chainRequest.ts` (+ test)**
+   - `createRequest` / `eip681Uri`: builds an EIP-681 payment URI for EURC or USDC on Base. Amount = base amount plus a unique micro-tag (max 9999 micro-USDC) so each open request is distinguishable.
+   - `matchRequest`: given public transfer logs, finds the transfer that matches an open request.
+   - `createOffer` / `matchOffer`: asset-neutral offer — the merchant lists accepted assets, the buyer pays whichever they hold.
+   - No keys, no network calls, no fee in this code.
 
-The app has no private GNU Taler API adapter and sends no order, authorization capability or user-entered pilot data to GNU Taler. The buyer/merchant simulation shares local state. A fixed external link opens GNU Taler's separate official public demo without query parameters or entered values; that external site is not an AgoraTap integration.
-
-## Immediate business wedge
-
-AgoraTap starts as the **merchant acceptance and checkout-integration layer**, not as an issuer, exchange, custodian or settlement provider. The first evidence product is a structured local merchant usability session with fictional value: can staff create a scenario, can a shopper understand the simulated flow, and can both understand the receipt and privacy boundary? Only measured merchant pull advances the product toward a paid integration pilot and an operator-controlled GNU Taler test environment.
-
-## Production direction
+## Data flow (design)
 
 ```text
-Buyer wallet (unlinkable one-time tokens; no routine KYC in-threshold)
-  │ blinded / unlinkable payment credential
-  ▼
-Issuer / exchange layer ◄── licensed CASP / EMI (funding edge, controls at lawful boundaries)
-  │ spend validation, replay prevention, no reusable shopper identifier
-  ▼
-Merchant acceptance (KYB-identified merchant)
-  │ signed proof of amount — not a buyer profile
-  ▼
-Merchant POS ── settlement choice ──> EUR stablecoin custody  or  SEPA Instant
+Merchant: creates offer (accepted assets, amount, own receiving address)
+   │  link / QR (EIP-681)
+   ▼
+Buyer: opens in own wallet, picks an accepted asset, signs and sends himself
+   │  on-chain transfer, wallet → wallet
+   ▼
+Public chain
+   │  read-only
+   ▼
+Reader (optional, replaceable, self-hostable): sees matching transfer → shows "paid"
+   ▼
+Accounting layer (the paid product): reconciliation, exports, reports
 ```
 
-A real design should separate:
+- The **reader** only reads public data. It does not sign, send or hold. The merchant must be able to run it themselves or ignore it and still be paid.
+- If the merchant wants a different asset or fiat, **they** convert, on their side, through a provider they choose. AgoraTap is not in that path.
 
-- **Funding identity** (if any, at regulated edges and above thresholds) from **individual purchase disclosure**.
-- **Payment proof** from **settlement instruction** so merchant settlement preference does not identify the buyer.
-- **Protocol data** from regulated compliance records with purpose limitation and retention.
+## Trust and threat table
 
-## Threat model (design target)
-
-| Actor | Should learn | Should not learn |
+| Actor | Learns | Does not learn |
 | --- | --- | --- |
-| Merchant | Amount, payment proof, own KYB identity, settlement status | Buyer name, reusable wallet ID, funding history, other purchases |
-| Card network | Nothing — there is no card-network authorization | Buyer PAN, merchant category graph, location trail |
-| Issuer / exchange | That a valid token was spent, replay prevention, threshold/sanctions signals | A merchant-visible shopping profile; purchases linkable to each other beyond protocol necessity |
-| Settlement partner | Merchant account, amount, timing needed to move money | Buyer identity for ordinary in-threshold payments |
-| Attacker with POS logs | Merchant-side amounts and proofs | A graph of who bought what across shops |
+| Merchant | Amount, asset, tx hash, payer's public address | Buyer's name or other purchases beyond what the public chain shows |
+| AgoraTap hosted reader (if used) | Public chain data about merchant addresses | Keys, balances it controls (none), buyer identity |
+| Public chain observers | Everything on-chain | — |
 
-This is why AgoraTap is not a Visa crypto card: those products still sit on card authorization. The network can profile the buyer even if the funding asset is a stablecoin.
+Honest limits: payments on a public chain are publicly linkable. The unique-amount tag is a matching aid, not privacy. Privacy-preserving assets and unlinkability remain research, not implemented here. Matching by amount can mis-match or be spoofed (someone paying the same tag); needs tests and a confirmation-depth rule before real use. The demo `localStorage` is readable on the device and receipts are unsigned.
 
-Honest limits of this demo: localStorage is readable on-device; receipts are unsigned; there is no blinding, no double-spend prevention, no NFC channel binding, and no real screening. “Settled” means only that demo state advanced.
+## Non-goals
 
-## Trust boundaries
+Custody, key management, exchange/conversion, relaying or broadcasting transactions, stablecoin issuance, buyer KYC, merchant KYB, card networks, bank APIs, refunds on behalf of anyone. (Refunds are a new payment from the merchant's own wallet.)
 
-- Buyer device ↔ issuer: credential issuance, recovery, key compromise, threshold controls.
-- Buyer device ↔ merchant: proximity/channel binding, request integrity, amount confirmation, relay/replay attacks.
-- Merchant ↔ acquirer: merchant identity, device enrollment, signed receipts, refunds and disputes.
-- Acquirer ↔ settlement partner: liquidity, finality, reconciliation, safeguarding and operational resilience.
+## Design principles
 
-## Non-goals of this repository
+- Ask for every feature: *how much can happen directly between the parties without us?*
+- Anything AgoraTap hosts must be optional and replaceable by the user's own copy.
+- Fees are explicit; there is none on payment flow. Revenue is the accounting subscription.
+- Publish an abuse policy and keep a register of what we learned and what we did.
+- Do not claim legal status; see `REGULATORY_BOUNDARIES.md`.
 
-No implementation of GNU Taler, NFC, offline payment, blockchain, custody, stablecoin issuance, exchange, KYC/KYB, sanctions screening, fraud scoring, refunds, disputes or bank APIs.
-
-## Design principles for a later system
-
-- Minimize linkable buyer data; no reusable merchant-facing identifiers.
-- Preserve amount/merchant consent at signing time.
-- Make fees, exchange rates, expiry and settlement status explicit.
-- Use idempotent state machines and cryptographically verifiable receipts.
-- Prefer licensed providers over building regulated custody or fiat movement in-house.
-- Treat SEPA as an optional fiat settlement rail, not as the buyer authorization network.
-- Do not treat privacy as a way around sanctions or AML obligations.
-
-The staged resilience and decentralization roadmap is maintained in [RESILIENCE_AND_DECENTRALIZATION.md](RESILIENCE_AND_DECENTRALIZATION.md).
+Roadmap and decentralisation stages: [RESILIENCE_AND_DECENTRALIZATION.md](RESILIENCE_AND_DECENTRALIZATION.md).

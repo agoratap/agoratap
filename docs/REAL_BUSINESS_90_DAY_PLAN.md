@@ -1,3 +1,5 @@
+> **SUPERSEDED IN PART (2026-10-01):** the direction is now non-custodial wallet→wallet with asset-neutral offers and a subscription accounting layer (see `ARCHITECTURE.md`, `REGULATORY_BOUNDARIES.md`). Sections of this plan that assume a Taler operator, a licensed principal, removal of stablecoins, or per-location pricing as the only model are historical and pending rewrite.
+
 # AgoraTap: 90-day path from demo to lawful EU business
 
 **Decision date:** 27 September 2026

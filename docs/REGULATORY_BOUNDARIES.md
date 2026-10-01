@@ -1,65 +1,53 @@
 # Regulatory Boundaries
 
-This document frames questions for qualified counsel and regulated partners; it is not legal advice and does not claim approval in any jurisdiction.
+Status: rewritten 2026-10-01 to match the Principal's confirmed intent (`apex-state/AGORA_PRINCIPAL_INTENT.md`). This replaces the earlier licensed-CASP/EMI + merchant-KYB model. This is not legal advice and claims no approval in any jurisdiction. Every legal statement carries a label: **FACT** (verifiable in code or an official text), **INTERPRETATION** (reasoned, not confirmed), **COUNSEL** (open question for a crypto-specialised lawyer).
 
-## Clear prototype boundary
+## 1. What AgoraTap is and is not
 
-AgoraTap currently moves no money and provides no payment, custody, exchange, issuance, transfer, banking, or identity service. All assets, quotes, transfers and SEPA status labels are seeded or calculated demo data. Nothing here is a legal anonymity guarantee.
+- **Is:** an open, non-custodial standard and software for asset-neutral payment requests. The merchant lists the assets they accept; the buyer pays with whatever they hold, from their own wallet, directly to the merchant's address.
+- **Is not:** a payment processor, custodian, exchange, issuer, relay, or bank. AgoraTap never holds keys, never holds or moves funds, never converts, never relays a transaction. **[FACT, code]** `src/lib/chainRequest.ts` contains no keys, no network calls and no fee; the payer's wallet sends.
+- Conversion is always the choice of the party who wants a different asset, done through that party's own provider, outside AgoraTap.
+- Current repo state **[FACT]**: `main` is a local demo plus the request-building library. No live money flows through anything in this repository.
 
-## Core product claim (design target, not current law)
+## 2. Revenue model (decided)
 
-- **Merchant:** remains identified. Production requires KYC/KYB, beneficial-owner checks, sanctions screening, risk classification, ongoing monitoring, and an auditable settlement trail.
-- **Buyer:** should not undergo *routine* identity collection for everyday payments *within lawful risk/value thresholds*. The buyer spends unlinkable payment credentials/tokens. This is the differentiator — not an optional extra.
-- **Not a guarantee:** thresholds, when identity *is* required, how sanctions lists are applied without rebuilding a shopper profile, and responses to valid legal process all require counsel and licensed partners. This demo implements none of that.
+- Revenue is a **subscription for the accounting/reconciliation layer** (matching payments to sales, exports, reports). **[Principal decision 2026-10-01]**
+- **No fee on payment flow.** No percentage, no per-transaction charge, no spread. AgoraTap earns nothing from the movement of value itself.
+- **[INTERPRETATION]** A flat subscription not tied to volume is easier to defend as "selling software" than a per-flow fee. **[COUNSEL]** confirm, including VAT/tax treatment of the subscription.
 
-Do not read “no routine buyer KYC” as “no AML,” “no sanctions screening,” or “anonymous for any amount.” Privacy for ordinary low-risk spend is compatible with controls at the edges. Evasion is out of scope.
+## 3. Chain-reading and "paid" status
 
-## Production path
+AgoraTap's reporting service reads public chain data and shows "paid" when a matching transfer exists. Matching uses the base amount plus a unique micro-tag **[FACT, code]**.
 
-A credible EU launch path would require a jurisdiction-by-jurisdiction perimeter assessment and likely partnerships with licensed entities:
+- **[INTERPRETATION]** This is functionally what a block explorer does: it reads public data and reports it; it does not instruct, execute, hold or transmit anything. We rate this the lowest-risk component of the project.
+- **[COUNSEL]** Does a *hosted* service that reads the chain and reports "paid" to a merchant, for a subscription, change the classification vs. an explorer? Would it change if the merchant runs the reader themselves (self-hosted) rather than us?
+- Design response regardless of the answer: keep the reader replaceable and self-hostable by the merchant; AgoraTap's hosted copy must be optional, never required for the merchant to receive funds.
 
-- a licensed CASP for relevant crypto-asset custody/exchange/transfer functions;
-- an EMI, payment institution, credit institution, or appropriately sponsored program for e-money/payment services and safeguarding;
-- a bank or payment partner for SEPA Instant reachability and reconciliation;
-- regulated stablecoin issuers/assets accepted under the applicable framework.
+## 4. Scope questions for counsel (not conclusions)
 
-Exact roles determine licensing, agency, outsourcing and liability. Provider logos or partnerships must not be claimed before signed agreements and diligence.
+| # | Question | Label |
+|---|---|---|
+| 1 | Does non-custodial software that standardises offer/authorisation/proof, never touching keys or funds, fall outside MiCA crypto-asset services (Art. 3, incl. "transfer services on behalf of clients")? MiCA recital text says non-custodial wallet *software* providers are outside scope, but the real service model decides, not the label. | COUNSEL |
+| 2 | AMLR (EU) 2024/1624, applying mainly from 10 Jul 2027: recital 160 exempts hardware/software providers and self-hosted wallets without access/control. A recital is not an operative article. | INTERPRETATION until confirmed |
+| 3 | TFR (EU) 2023/1113 applies to transfers to/from self-hosted addresses *when a CASP is involved*. Pure wallet-to-wallet without a CASP is not treated the same. | INTERPRETATION (strong) |
+| 4 | When a *merchant* converts to fiat through a CASP, TFR/KYB falls on that CASP-merchant relationship, not on AgoraTap or on the buyer's self-hosted payment. | INTERPRETATION |
+| 5 | Is the merchant (accepting crypto directly) an obliged entity or subject to local tax/AML duties (Cyprus/EU)? | COUNSEL |
+| 6 | Entity and jurisdiction of the operator; personal exposure of the founder vs. the entity. | COUNSEL |
+| 7 | GDPR/ePrivacy for the hosted reader: what data, how long. Design target: none about buyers beyond public chain data. | COUNSEL |
 
-## Merchant obligations
+## 5. Abuse and sanctions posture
 
-Merchants would undergo KYC/KYB, beneficial-owner checks, sanctions screening, risk classification and ongoing monitoring. Acceptance devices and settlement accounts must be bound to the verified merchant. Records, refunds, complaints, tax evidence and suspicious-activity processes need defined ownership. The merchant audit trail records *merchant* activity and settlement, not a reusable buyer identity.
+- AgoraTap does not operate payments and so cannot freeze or reverse them. This is stated publicly.
+- Published abuse policy (see `apex-state/research/trocador-model-and-abuse-policy-2026-10-01.md` §3): abuse reports are logged; credible reports about a merchant address lead to removal of that address from the hosted reader/directory and to a written entry in an internal register of what was learned and done. Valid legal process is answered; the data held is minimal by design.
+- **[COUNSEL]** whether sanctions screening of merchant addresses in the hosted service is required, recommended or counter-productive.
 
-## Buyer privacy and controls
+## 6. Claims we do not make
 
-The design goal is purchase unlinkability and *no routine buyer identity collection in-threshold*. It is not exemption from law.
+- No "anonymous", "untraceable" or "KYC-free" claims. Public chains are public.
+- No "licensed", "approved" or "compliant" claim in any jurisdiction before counsel's written opinion.
+- No partner logo or integration claim without a signed agreement.
+- "Non-custodial" is a description of the design, not a legal conclusion.
 
-Production controls may include:
+## 7. Gate
 
-- published risk/value thresholds above which additional buyer checks apply;
-- regulated funding-edge controls that do not leak a shopper graph to merchants;
-- velocity/value monitoring at protocol boundaries rather than merchant-visible profiles;
-- sanctions screening designed to avoid creating a checkout identity unless legally required;
-- freezes, escalation and response to valid legal process.
-
-Controls should avoid exposing a reusable buyer identity or full wallet history to the merchant.
-
-## Why this is not a Visa crypto card
-
-Visa (and similar) crypto cards convert an asset into a card authorization. The card network still sees merchant, amount, time and a persistent PAN/token. That is buyer transaction profiling by a network, and often by the acquirer. AgoraTap’s design target is:
-
-- no card-network authorization;
-- no merchant-side buyer profiling;
-- unlinkable one-time payment credentials.
-
-Card networks may still appear *upstream* if a buyer later chooses a card-funded on-ramp. That on-ramp is outside the proposed payment proof and must be disclosed honestly.
-
-## Rails and claims
-
-- AgoraTap proposes **no card-network authorization** at checkout.
-- **SEPA remains part of the system when a merchant chooses fiat settlement.** “Card-network-free” does not mean “bank-rail-free.”
-- EUR stablecoin settlement is not the same as legal-tender bank money and must be described accurately.
-- Privacy, speed, finality, fee and availability claims require measured evidence and legal review.
-
-## Additional workstreams
-
-MiCA/crypto-asset classification, PSD2/PSD3/PSR perimeter, AML package/transfer-of-funds obligations, e-money analysis, DORA/outsourcing, GDPR/ePrivacy, consumer rights, tax/accounting, sanctions, competition and accessibility all require specialist review before a pilot. The applicable framework will depend on product structure and launch date.
+Before any real-money pilot: counsel produces a written perimeter and responsibility matrix (see `RESILIENCE_AND_DECENTRALIZATION.md`, review gate). Until then: demo and testnet/own-funds tests only.
