@@ -364,7 +364,7 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           </fieldset>
-          <button className="secondary full" onClick={exportReport}><Download size={17} /> Export session report</button>
+          <button type="button" className="secondary full" onClick={exportReport}><Download size={17} /> Export session report</button>
           <p className="fine-print"><strong>{PILOT_REPORT_DEMO_LABEL}.</strong> Downloads a JSON and a CSV file built in this browser from the facts above, including closed-choice friction tags and per-step timing. Nothing is uploaded; no free-text or customer data is stored.</p>
           <div className="sandbox-boundary"><Info size={18} /><div><strong>What this proves</strong><p>Only that the merchant-facing copy and task flow can be tested. It proves no protocol integration, payment, settlement, demand or regulatory status.</p></div></div>
         </>}
