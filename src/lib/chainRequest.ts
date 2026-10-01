@@ -87,3 +87,43 @@ export function matchRequest(req: OpenRequest, logs: readonly TransferLog[]): Ma
   if (hits.length > 1) return { status: 'ambiguous', txHashes: hits.map((h) => h.txHash) }
   return { status: 'matched', txHash: hits[0].txHash, blockNumber: hits[0].blockNumber }
 }
+
+/**
+ * Asset-neutral offer: the merchant lists every asset it is happy to receive; the buyer pays in whichever one
+ * they already hold. No conversion happens in AgoraTap. If the merchant wants something else (another coin or
+ * fiat), the merchant converts on its own side, through its own provider.
+ */
+export interface Quote {
+  readonly token: TokenSymbol
+  readonly baseAtomic: bigint
+}
+
+export function createOffer(
+  input: { orderId: string; chain: ChainName; merchant: string; quotes: readonly Quote[] },
+  open: readonly OpenRequest[],
+): OpenRequest[] {
+  if (input.quotes.length === 0) throw new Error('Offer needs at least one accepted asset')
+  const seen = new Set<TokenSymbol>()
+  const made: OpenRequest[] = []
+  for (const q of input.quotes) {
+    if (seen.has(q.token)) throw new Error(`Asset listed twice: ${q.token}`)
+    seen.add(q.token)
+    made.push(createRequest({ orderId: input.orderId, chain: input.chain, token: q.token, merchant: input.merchant, baseAtomic: q.baseAtomic }, [...open, ...made]))
+  }
+  return made
+}
+
+/** Whichever asset the buyer used closes the whole offer. Two different assets paid = ambiguous (never silently paid twice). */
+export function matchOffer(
+  requests: readonly OpenRequest[],
+  logsByToken: Partial<Record<TokenSymbol, readonly TransferLog[]>>,
+): MatchResult {
+  const paid = requests
+    .map((r) => ({ r, res: matchRequest(r, logsByToken[r.token] ?? []) }))
+    .filter((x) => x.res.status !== 'unpaid')
+  if (paid.length === 0) return { status: 'unpaid' }
+  if (paid.length > 1 || paid[0].res.status === 'ambiguous') {
+    return { status: 'ambiguous', txHashes: paid.flatMap((x) => (x.res.status === 'matched' ? [x.res.txHash] : x.res.status === 'ambiguous' ? x.res.txHashes : [])) }
+  }
+  return paid[0].res
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest, eip681Uri, formatUsdc, isAddress, matchRequest, toAtomicEurc, toAtomicUsdc, MAX_TAG, type OpenRequest } from './chainRequest'
+import { createOffer, matchOffer, createRequest, eip681Uri, formatUsdc, isAddress, matchRequest, toAtomicEurc, toAtomicUsdc, MAX_TAG, type OpenRequest } from './chainRequest'
 
 const MERCHANT = '0x1111111111111111111111111111111111111111'
 const base = toAtomicUsdc(3.5, 1.1) // EUR 3.50 at 1.10 USD/EUR = 3.85 USDC
@@ -63,5 +63,28 @@ describe('chain payment request', () => {
     const u = createRequest({ orderId: 'U', chain: 'base', token: 'USDC', merchant: MERCHANT, baseAtomic: 1_000_000n }, [])
     const e = createRequest({ orderId: 'E', chain: 'base', token: 'EURC', merchant: MERCHANT, baseAtomic: 1_000_000n }, [u])
     expect(e.tag).toBe(1)
+  })
+
+  it('offer: merchant accepts several assets, buyer pays in the one they hold, no conversion by us', () => {
+    const offer = createOffer({ orderId: 'O', chain: 'base', merchant: MERCHANT, quotes: [{ token: 'EURC', baseAtomic: 3_500_000n }, { token: 'USDC', baseAtomic: 3_850_000n }] }, [])
+    expect(offer.map((o) => o.token)).toEqual(['EURC', 'USDC'])
+    const usdc = offer[1]
+    const res = matchOffer(offer, { USDC: [{ to: MERCHANT, value: usdc.atomic, txHash: '0xu', blockNumber: 9 }] })
+    expect(res).toEqual({ status: 'matched', txHash: '0xu', blockNumber: 9 })
+    expect(matchOffer(offer, {})).toEqual({ status: 'unpaid' })
+  })
+
+  it('offer: payment in two different assets is ambiguous, not paid', () => {
+    const offer = createOffer({ orderId: 'O', chain: 'base', merchant: MERCHANT, quotes: [{ token: 'EURC', baseAtomic: 3_500_000n }, { token: 'USDC', baseAtomic: 3_850_000n }] }, [])
+    const res = matchOffer(offer, {
+      EURC: [{ to: MERCHANT, value: offer[0].atomic, txHash: '0xe', blockNumber: 1 }],
+      USDC: [{ to: MERCHANT, value: offer[1].atomic, txHash: '0xu', blockNumber: 2 }],
+    })
+    expect(res.status).toBe('ambiguous')
+  })
+
+  it('offer: rejects empty or duplicated asset lists', () => {
+    expect(() => createOffer({ orderId: 'O', chain: 'base', merchant: MERCHANT, quotes: [] }, [])).toThrow()
+    expect(() => createOffer({ orderId: 'O', chain: 'base', merchant: MERCHANT, quotes: [{ token: 'EURC', baseAtomic: 1n }, { token: 'EURC', baseAtomic: 2n }] }, [])).toThrow()
   })
 })
