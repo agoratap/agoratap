@@ -24,3 +24,10 @@
 .friction-tags input{width:auto;min-height:0;margin:0}
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.address-check { display: grid; gap: 8px; margin: 12px 0; }
+.address-check input { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; }
+.address-check-result { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #eef3ee; color: #123b2e; }
+.address-check-result p { margin: 0; font-size: 13px; }
+.address-check-warn { background: #fff1d6; color: #7a3b00; border: 1px solid #e0a040; }
+.address-check-note { color: #5b6b63; font-size: 12px; }
