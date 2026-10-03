@@ -83,6 +83,19 @@ describe('chainReader: reading', () => {
     const res = await reader(f).transfers({ chain: 'baseSepolia', token: 'EURC', merchant: MERCHANT, fromBlock: 0, toBlock: 99 })
     expect(res.logs.map((l) => l.blockNumber)).toEqual([10, 70])
   })
+  it('parses an HTTP 413 JSON-RPC range error and splits like the real Base public endpoint', async () => {
+    const spans: number[] = []
+    const f: FetchLike = async (_url, init) => {
+      const { params } = JSON.parse(init.body)
+      const from = parseInt(params[0].fromBlock, 16), to = parseInt(params[0].toBlock, 16)
+      const span = to - from + 1; spans.push(span)
+      if (span > 50) return { ok: false, status: 413, json: async () => ({ error: { code: -32614, message: 'eth_getLogs is limited to a 50 range' } }) }
+      return { ok: true, status: 200, json: async () => ({ result: [] }) }
+    }
+    const res = await reader(f).transfers({ chain: 'baseSepolia', token: 'EURC', merchant: MERCHANT, fromBlock: 0, toBlock: 99 })
+    expect(res.logs).toEqual([])
+    expect(spans).toEqual([100, 50, 50])
+  })
   it('does not double count a log returned by two overlapping slices', async () => {
     const res = await reader(fakeFetch(() => [rawLog({ block: 3, value: 9n }), rawLog({ block: 3, value: 9n })])).transfers({ chain: 'baseSepolia', token: 'EURC', merchant: MERCHANT, fromBlock: 0, toBlock: 10 })
     expect(res.logs).toHaveLength(1)

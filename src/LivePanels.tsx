@@ -12,7 +12,7 @@ import { windowFrom } from './lib/confirmation'
 
 const CHAIN = 'baseSepolia' as const
 export const POLL_MS = 6000
-const defaultReader = (): ChainReader => createChainReader({ fetchFn: browserFetch, rpcUrl: PUBLIC_RPC[CHAIN], maxCalls: 40 })
+const defaultReader = (): ChainReader => createChainReader({ fetchFn: browserFetch, rpcUrl: PUBLIC_RPC[CHAIN], maxRange: 1000, maxCalls: 60 })
 
 const TESTNET_NOTE = 'Base Sepolia test network only. Test tokens have no value. Read-only: this page never signs, sends or holds anything. Reads go to the public endpoint sepolia.base.org, which sees your IP address.'
 

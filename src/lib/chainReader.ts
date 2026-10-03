@@ -41,7 +41,7 @@ export class ChainReadError extends Error {
 export interface ReaderOptions {
   readonly fetchFn: FetchLike
   readonly rpcUrl: string
-  /** Widest eth_getLogs span first tried (the public Base endpoint rejects > 2000, observed error -32614). */
+  /** Widest eth_getLogs span first tried (the public Base endpoint rejects > 1000 with HTTP 413 + JSON-RPC -32614, observed 2026-10-03). */
   readonly maxRange?: number
   /** Hard cap on RPC calls per operation, so a bug or a huge window cannot hammer a free public endpoint. */
   readonly maxCalls?: number
@@ -107,7 +107,7 @@ export function parseTransferLog(raw: unknown, tokenAddress: string): ObservedTr
 const RANGE_ERROR = /range|limit|too many|exceed|too large|more than/i
 
 export function createChainReader(opts: ReaderOptions) {
-  const maxRange = opts.maxRange ?? 2000
+  const maxRange = opts.maxRange ?? 1000
   const maxCalls = opts.maxCalls ?? 200
   const retries = opts.retries ?? 4
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
@@ -127,10 +127,18 @@ export function createChainReader(opts: ReaderOptions) {
       if (res.ok || !(res.status === 429 || res.status >= 500) || attempt >= retries) break
       await sleep(500 * 2 ** attempt)
     }
+    let body: { result?: unknown; error?: { code?: number; message?: string } }
+    try {
+      body = (await res.json()) as { result?: unknown; error?: { code?: number; message?: string } }
+    } catch {
+      if (!res.ok) throw new ChainReadError('http-error', `RPC answered HTTP ${res.status}`)
+      throw new ChainReadError('bad-response', 'RPC answer is not valid JSON')
+    }
+    if (body !== null && typeof body === 'object' && body.error) {
+      throw new ChainReadError('rpc-error', `${method}: ${body.error.code ?? ''} ${body.error.message ?? ''}`.trim())
+    }
     if (!res.ok) throw new ChainReadError('http-error', `RPC answered HTTP ${res.status}`)
-    const body = (await res.json()) as { result?: unknown; error?: { code?: number; message?: string } }
     if (body === null || typeof body !== 'object') throw new ChainReadError('bad-response', 'RPC answer is not an object')
-    if (body.error) throw new ChainReadError('rpc-error', `${method}: ${body.error.code ?? ''} ${body.error.message ?? ''}`.trim())
     if (!('result' in body)) throw new ChainReadError('bad-response', 'RPC answer has neither result nor error')
     return body.result
   }
