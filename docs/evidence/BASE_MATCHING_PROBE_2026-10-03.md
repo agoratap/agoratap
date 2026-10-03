@@ -24,3 +24,10 @@ Reading real payment logs needs no node of our own and no key. A 24 h window cos
 
 ## Next step this suggests
 Test the per-merchant case rather than the global one: filter logs by the merchant address (topic 2), so the collision rate is measured for a single recipient. Then decide between tag matching and a reference carried by a contract/permit design. Neither is built.
+
+## Follow-up, same day (built modules, `live-read-check-2026-10-03.json`)
+Run with `scripts/live-read-check.ts` using the real `chainReader`, real mainnet endpoint, read-only: 10 recipients, node-side recipient filter, 24 h each, 224 HTTP calls in about 70 s (the endpoint answered HTTP 429 once with a faster loop; a retry with backoff was added and tested).
+- Per recipient: 2 to 4,304 transfers in 24 h; repeats of the same amount from 0 to 175 per recipient.
+- 2,000 fresh random-tag draws against each recipient's own history: 0 collisions.
+- Real `finalized` block was about 515 blocks (~17 min) behind head; a real transfer with 92 confirmations was `confirmed` but not `final`.
+Decision taken from this: `docs/MATCHING_DESIGN.md`.

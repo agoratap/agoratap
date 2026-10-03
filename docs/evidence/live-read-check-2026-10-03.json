@@ -1,0 +1,96 @@
+{
+  "rpc": "https://mainnet.base.org",
+  "head": 52116598,
+  "finalized": 52116083,
+  "merchantsMeasured": 10,
+  "httpCalls": 224,
+  "seconds": 69.898,
+  "perMerchant": [
+    {
+      "merchant": "0xf39b7c34…",
+      "transfers24h": 2788,
+      "distinctAmounts": 2380,
+      "amountsSeenMoreThanOnce": 126,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0xaa5fe7dc…",
+      "transfers24h": 4304,
+      "distinctAmounts": 4003,
+      "amountsSeenMoreThanOnce": 175,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0x2192bc3b…",
+      "transfers24h": 2886,
+      "distinctAmounts": 2578,
+      "amountsSeenMoreThanOnce": 148,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0x8f10b468…",
+      "transfers24h": 1318,
+      "distinctAmounts": 1008,
+      "amountsSeenMoreThanOnce": 24,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0xe846373c…",
+      "transfers24h": 1725,
+      "distinctAmounts": 1595,
+      "amountsSeenMoreThanOnce": 48,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0x3dbe077e…",
+      "transfers24h": 2176,
+      "distinctAmounts": 2131,
+      "amountsSeenMoreThanOnce": 6,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0x86954fae…",
+      "transfers24h": 45,
+      "distinctAmounts": 36,
+      "amountsSeenMoreThanOnce": 3,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0x2e4fdf55…",
+      "transfers24h": 1028,
+      "distinctAmounts": 1028,
+      "amountsSeenMoreThanOnce": 0,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0xbd279f50…",
+      "transfers24h": 341,
+      "distinctAmounts": 340,
+      "amountsSeenMoreThanOnce": 1,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    },
+    {
+      "merchant": "0xb43ccbcc…",
+      "transfers24h": 42,
+      "distinctAmounts": 1,
+      "amountsSeenMoreThanOnce": 1,
+      "freshRequestCollisionsOf200": 0,
+      "rpcCalls": 22
+    }
+  ],
+  "confirmationRuleOnRealTransfer": {
+    "status": "confirmed",
+    "confirmations": 92,
+    "final": false,
+    "note": "amount may repeat -> ambiguous is legitimate"
+  }
+}
