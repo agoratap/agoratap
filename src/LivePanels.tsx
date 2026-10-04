@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Radio } from 'lucide-react'
 import { createChainReader, PUBLIC_RPC, type ChainReader } from './lib/chainReader'
 import { browserFetch } from './lib/liveFetch'
-import { describeState, openLiveRequest, refreshLive, type LiveRequest } from './lib/liveSession'
+import { describeState, HISTORY_LOOKBACK_BLOCKS, openLiveRequest, refreshLive, type LiveRequest } from './lib/liveSession'
 import { type PaymentState } from './lib/confirmation'
 import { parseRequestLink } from './lib/requestLink'
 import { eip681Uri, formatUsdc, isAddress, type OpenRequest } from './lib/chainRequest'
@@ -79,6 +79,10 @@ export function MerchantLive({ reader, random = secureRandom }: { reader?: Chain
   </section>
 }
 
+export function buyerWatchWindow(head: number) {
+  return windowFrom(Math.max(0, head - HISTORY_LOOKBACK_BLOCKS))
+}
+
 /** Buyer side: paste a payment link, see exactly what it asks, open it in your own wallet, and watch confirmations. */
 export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; initialText?: string }) {
   const rd = useMemo(() => reader ?? defaultReader(), [reader])
@@ -101,7 +105,7 @@ export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; 
     try {
       const { head } = await rd.headBlock()
       const request: OpenRequest = { orderId: 'buyer-watch', chain: parsed.chain, token: parsed.token, merchant: parsed.merchant, atomic: parsed.atomic, baseAtomic: parsed.atomic, tag: 0 }
-      setLive({ request, window: windowFrom(head), uri: eip681Uri(request), confirmations: 12 }); setWatching(true)
+      setLive({ request, window: buyerWatchWindow(head), uri: eip681Uri(request), confirmations: 12 }); setWatching(true)
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not read the chain') }
   }
   usePolling(async () => {
@@ -126,6 +130,6 @@ export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; 
       <button className="secondary full" onClick={watch}>Watch the chain for this payment</button>
     </>}
     {(watching || error) && <StateLine state={state} error={error} />}
-    <small className="address-check-note">{TESTNET_NOTE} Your wallet, not AgoraTap, signs and sends. Watching starts from the current block.</small>
+    <small className="address-check-note">{TESTNET_NOTE} Your wallet, not AgoraTap, signs and sends. Watching includes the prior 24 hours so a payment made just before opening this screen is not missed.</small>
   </section>
 }

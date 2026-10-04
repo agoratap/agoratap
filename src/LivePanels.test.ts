@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { BuyerLive, MerchantLive } from './LivePanels'
+import { BuyerLive, MerchantLive, buyerWatchWindow } from './LivePanels'
 import { eip681Uri, type OpenRequest } from './lib/chainRequest'
 import { OFAC_LIST } from './lib/screening'
 
@@ -10,6 +10,11 @@ const r = (chain: 'base' | 'baseSepolia', merchant = M): OpenRequest => ({ order
 const buyer = (text: string) => renderToStaticMarkup(createElement(BuyerLive, { initialText: text }))
 
 describe('live test panels', () => {
+  it('buyer watch includes the prior 24 hours so a payment made just before opening the watcher is not missed', () => {
+    expect(buyerWatchWindow(50_000)).toEqual({ fromBlock: 6_800 })
+    expect(buyerWatchWindow(1_000)).toEqual({ fromBlock: 0 })
+  })
+
   it('merchant panel is labelled testnet read-only and says a match does not prove who paid', () => {
     const html = renderToStaticMarkup(createElement(MerchantLive))
     expect(html).toMatch(/BASE SEPOLIA, READ-ONLY/)
