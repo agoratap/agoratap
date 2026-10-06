@@ -10,6 +10,8 @@ import {
   type Asset, type PaymentRequest, type Receipt, type Settlement,
 } from './lib/payments'
 import { FRICTION_TAGS, createFrictionCapture, timing, type FrictionTag } from './lib/friction'
+import { AddressCheck } from './AddressCheck'
+import { BuyerLive, MerchantLive } from './LivePanels'
 import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 
@@ -207,6 +209,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
     </div>
     <div className="incoming"><div className="incoming-pulse"><Radio size={18} /></div><div><small>PAYMENT REQUEST FOUND</small><strong>Corner Market · {money(request.amount)}</strong></div></div>
     <button className="primary full" onClick={() => setStep('quote')}>Review & pay <ChevronRight size={18} /></button>
+    <BuyerLive />
   </FlowLayout>
 }
 
@@ -214,6 +217,7 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
   const [step, setStep] = useState<MerchantStep>('amount')
   const [amount, setAmount] = useState('12.50')
   const [settlement, setSettlement] = useState<Settlement>('EUR_STABLECOIN')
+  const [checkedAddress, setCheckedAddress] = useState('')
   const request = data.request
   const makeRequest = () => {
     const value = Number(amount)
@@ -257,6 +261,8 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
       <button className={settlement === 'EUR_STABLECOIN' ? 'selected' : ''} onClick={() => setSettlement('EUR_STABLECOIN')}><span className="settlement-icon"><CircleDollarSign /></span><div><strong>EUR stablecoin</strong><small>Instant · demo wallet</small></div><span className="radio-dot" /></button>
       <button className={settlement === 'SEPA_INSTANT' ? 'selected' : ''} onClick={() => setSettlement('SEPA_INSTANT')}><span className="settlement-icon"><Landmark /></span><div><strong>SEPA Instant</strong><small>Simulated fiat settlement</small></div><span className="radio-dot" /></button>
     </div>
+    <AddressCheck value={checkedAddress} onChange={setCheckedAddress} />
+    <MerchantLive />
     <div className="fee-line"><span>Demo processing fee</span><strong>€0.00</strong></div>
     <button className="primary full" onClick={makeRequest} disabled={!Number(amount)}>Create payment request <ArrowRight size={18} /></button>
   </FlowLayout>
