@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sepolia:reference-e2e": "tsx scripts/sepolia-reference-e2e.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.2.0",
@@ -22,7 +23,9 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "jsdom": "^29.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
+    "viem": "^2.57.3",
     "vitest": "^5.0.2"
   }
 }

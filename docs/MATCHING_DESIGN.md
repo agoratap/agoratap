@@ -52,3 +52,16 @@ Sepolia demo, test funds only:
 3. Copy the transaction hash from the wallet.
 4. Paste it into either panel and choose "Match this transaction".
 5. The line moves from unpaid (or ambiguous, if another transfer of that amount exists) to pending, then to confirmed after 12 blocks. The panel polls about every 6 seconds. A bound hash is read with one `eth_getTransactionReceipt` (the Transfer logs in that receipt). It only reads `sepolia.base.org`.
+
+## 6. Sepolia harness run on 2026-10-06
+
+`npm run sepolia:reference-e2e` uses the same `openLiveRequest`, share link, and `refreshLive` path as the panels. It talks only to `https://sepolia.base.org` and refuses chain id 8453. The throwaway signing key stays outside the repository.
+
+The run recorded in `docs/evidence/sepolia-e2e-2026-10-06/` did this against the live testnet:
+
+- Chain id 84532. Test EURC `0x808456652fdb597867f38412077A9182bf77359F` returned symbol EURC and 6 decimals.
+- A real inbound transfer of 20 test EURC to the throwaway payer: `0x8e1b1bf62874dd3ae2ff8180fed89aafcf74f731c23dae112f38be73ccd41676`, block 47,772,257. The receipt contains one EURC Transfer.
+- A live sale was created. The share link ends in `#ref=` (32 bytes). The wallet link is the same transfer without that fragment. The panel line was unpaid: "Waiting: no matching transfer seen on chain yet."
+- Opening the same flow on Base mainnet threw "Mainnet is disabled at this stage: use Base Sepolia (test funds only)".
+
+No payment transaction was broadcast. The payer's Base Sepolia ETH balance was 0 wei, and at the gas price read then (6,000,000 wei) the harness required about 5,400,000,000,000 wei before it would sign. It did not invent a transaction. The faucet attempts and the exact next step are in `docs/evidence/sepolia-e2e-2026-10-06/REPORT.md`.
