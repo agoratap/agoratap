@@ -16,6 +16,21 @@ describe('live test panels', () => {
     expect(buyerWatchWindow(1_000)).toEqual({ fromBlock: 0 })
   })
 
+  it('merchant panel offers a device backup and a missed-payment check', () => {
+    const html = renderToStaticMarkup(createElement(MerchantLive))
+    expect(html).toMatch(/Export sale backup/)
+    expect(html).toMatch(/Import sale backup/)
+    expect(html).toMatch(/Remove saved sales on this device/)
+    expect(html).toMatch(/Keys stay in your wallet, on your device/)
+    expect(html).toMatch(/Non-custodial/)
+    expect(html).toMatch(/does not hold wallet keys/)
+    expect(html).toMatch(/Missed payment\?/)
+    expect(html).toMatch(/Base mainnet is refused/)
+    expect(html).toMatch(/does not decide the payment/)
+    expect(html).toMatch(/does not prove who paid/)
+    expect(html).toMatch(/Nothing is signed or sent/)
+  })
+
   it('merchant panel is labelled testnet read-only and says a match does not prove who paid', () => {
     const html = renderToStaticMarkup(createElement(MerchantLive))
     expect(html).toMatch(/BASE SEPOLIA, READ-ONLY/)

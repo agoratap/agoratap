@@ -42,6 +42,8 @@ A plain `transfer(address,uint256)` still cannot carry a memo, and a wallet that
 4. Secondary match: if no hash is bound, the amount tag still applies. Two transfers of that amount stay `ambiguous` until a hash selects one.
 5. States stay `unpaid` → `pending` (under 12 blocks) → `confirmed`. `final` still depends on the node's finalized block. A match still does not prove who paid.
 6. Base mainnet is refused. Nothing is signed or sent from this app.
+7. The merchant panel keeps each live sale on the device (IndexedDB) and can export or import that record as JSON. The file holds the reference, address, amount, block window and any bound hash. It has no wallet key.
+8. **Missed payment?** repeats the same check from a pasted sale link and transaction hash. If the saved block window is not on the device, the check does not decide the payment and does not read the chain.
 
 Example merchant address on file for a later pilot, not a default and not enabled on mainnet: `0xCc15552e20ed43c47a1EEBf781c905Cd1117CEa3`.
 
@@ -52,6 +54,7 @@ Sepolia demo, test funds only:
 3. Copy the transaction hash from the wallet.
 4. Paste it into either panel and choose "Match this transaction".
 5. The line moves from unpaid (or ambiguous, if another transfer of that amount exists) to pending, then to confirmed after 12 blocks. The panel polls about every 6 seconds. A bound hash is read with one `eth_getTransactionReceipt` (the Transfer logs in that receipt). It only reads `sepolia.base.org`.
+6. Export the sale backup before leaving the page. If the sale is gone, import that file, open **Missed payment?**, and paste the same link and hash. Without the saved window the page will not decide the payment.
 
 ## 6. Sepolia harness run on 2026-10-06
 

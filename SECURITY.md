@@ -8,7 +8,9 @@ The product *aims* at unlinkable buyer credentials and no routine buyer KYC in-t
 
 ## Data handling
 
-Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. The Merchant pilot session report (JSON/CSV) is likewise generated locally, unsigned, DEMO-labelled, and not legal or regulatory evidence. Friction capture is closed-choice tags plus client-side step timing only — no free text, no customer or personal data. Reset clears the Agora Pay storage key (`agorapay-pilot-v1`) and the previous key (`agoratap-demo-v1`) if it is still present; browser/download history and downloaded files are outside the app's control.
+Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. The Merchant pilot session report (JSON/CSV) is likewise generated locally, unsigned, DEMO-labelled, and not legal or regulatory evidence. Friction capture is closed-choice tags plus client-side step timing only — no free text, no customer or personal data. Reset clears the Agora Pay storage key (`agorapay-pilot-v1`) and the previous key (`agoratap-demo-v1`) if it is still present.
+
+A live test sale (receiving address, amount, payment reference, block window, and any bound transaction hash) is also kept in this browser's IndexedDB and can be exported or imported as readable JSON (`agorapay.merchant-session`, version 1). That file does not contain a wallet key, seed, or secret. It is not encrypted and not signed. Anyone with the file can see the sale. Import refuses a Base mainnet sale and refuses a file that contains key material. Reset clears the on-device copy. A file already downloaded stays on disk; browser download history is outside the app's control.
 
 ## Threat model (production target)
 

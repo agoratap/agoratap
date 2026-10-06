@@ -15,6 +15,7 @@ import { BuyerLive, MerchantLive } from './LivePanels'
 import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 import { LEGACY_STORAGE_KEY, STORAGE_KEY, resolveStoredRecord } from './lib/storage'
+import { beginDeviceMerchantSessionClear } from './lib/merchantSession'
 
 type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
@@ -69,6 +70,7 @@ function App() {
   const reset = () => {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(LEGACY_STORAGE_KEY)
+    beginDeviceMerchantSessionClear()
     setDataRaw(seedState)
     setScreen('home')
   }
@@ -81,7 +83,7 @@ function App() {
           <span className="brand-mark"><Leaf size={18} strokeWidth={2.5} /></span>
           <span>agora <span>pay</span></span>
         </button>
-        <div className="top-actions">{screen === 'home' ? <span className="demo-label"><span />EARLY PILOT</span> : <DemoLabel />}<button className="icon-button" onClick={reset} title="Reset local practice data"><RefreshCcw size={17} /></button></div>
+        <div className="top-actions">{screen === 'home' ? <span className="demo-label"><span />EARLY PILOT</span> : <DemoLabel />}<button className="icon-button" onClick={reset} title="Reset local practice data and saved sales"><RefreshCcw size={17} /></button></div>
       </header>
 
       <main>
