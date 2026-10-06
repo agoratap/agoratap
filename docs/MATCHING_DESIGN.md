@@ -1,6 +1,6 @@
 # Matching design — decision of 2026-10-03
 
-Status: DECIDED for the read-only testnet stage. Built: `src/lib/tagging.ts`, `confirmation.ts`, `chainReader.ts`. Not built: the reference-bearing design in section 4.
+Status: amount-tag rules below stay in force as the secondary signal. The buyer-side reference in section 4 is now built for Base Sepolia (`src/lib/reference.ts`, wired through `confirmation.ts` and the live panels). EIP-3009 and a router contract are still not built.
 
 ## 1. The problem, with real numbers
 A plain ERC-20 `transfer` has no order reference. On Base mainnet EURC, read from the public endpoint on 2026-10-03 (`docs/evidence/`):
@@ -23,11 +23,32 @@ Measured with real histories: 200 fresh requests per recipient × 10 recipients 
 - Real finality on Base mainnet was observed to lag the head: the `finalized` block was 515 blocks (about 17 minutes) behind the head in the run of 2026-10-03; a transfer with 92 confirmations was still not `final`. So "confirmed" (12 blocks) and "final" are different and the screen shows which.
 - 12 confirmations is a chosen default (about 24 s), not a measured safe value.
 
-## 4. Reference-bearing alternatives (documented, not built)
+## 4. Reference-bearing alternatives
 | Option | Gives | Cost / risk |
 |---|---|---|
 | EIP-3009 `transferWithAuthorization` (USDC and EURC both implement it) with `nonce` = hash(orderId) | A reference on chain, tied to the buyer's signed authorisation | Needs a relayer/submitter to send it (or the buyer's own wallet to call it). Relaying means someone pays gas and holds a role: touches the core (non-custodial, no server that decides). Needs Bogdan's written decision. |
 | Small router contract: `pay(token, merchant, amount, orderRef)` emitting an event | Reference on chain, exact match, no amount tag | A deployed contract = audit, key for deployment, legal review; changes the "tool, not operator" posture. Needs Bogdan's written decision and money for audit. |
-| Buyer-side proof: buyer pastes the tx hash back to the merchant | Binds a payer claim to a transfer | Manual, but zero new infrastructure. Could be added now as a UI step (not built). |
+| Buyer-side proof: buyer pastes the tx hash back to the merchant | Binds a payer claim to a transfer | **Built** for Base Sepolia. See section 5. Manual step, zero new infrastructure, no custody. |
 
-Recommendation: keep the tag scheme for the testnet/pilot stage (it stays inside the frozen core), measure with a real pilot merchant, and decide on EIP-3009 vs a router only when real ambiguity numbers from a pilot exist. Moving to either option is a CORE_RULE decision for Bogdan.
+EIP-3009 and a router contract still need Bogdan's written decision. They are not in this slice. The amount tag stays, as a backup only.
+
+## 5. Built slice — reference on the share link, transaction hash on the transfer (2026-10-06)
+
+A plain `transfer(address,uint256)` still cannot carry a memo, and a wallet that follows EIP-681 will not append one. What every ERC-20 Transfer log already carries is its transaction hash. That hash is the on-chain id.
+
+1. Creating a live sale draws a stable 32-byte reference once and puts it on the share link as a fragment: `ethereum:<token>@84532/transfer?address=<merchant>&uint256=<atomic>#ref=<32 bytes>`.
+2. The wallet link is the same URI without `#ref=`. The fragment is not a transfer argument. Query-string `&ref=` is rejected, so it cannot be mistaken for calldata.
+3. Primary match: the buyer or the merchant pastes the transaction hash. Only a Transfer log with that hash, the merchant as recipient, the exact amount, and inside the request's block window counts. A second transfer of the same amount does not. One hash cannot be bound to two references.
+4. Secondary match: if no hash is bound, the amount tag still applies. Two transfers of that amount stay `ambiguous` until a hash selects one.
+5. States stay `unpaid` → `pending` (under 12 blocks) → `confirmed`. `final` still depends on the node's finalized block. A match still does not prove who paid.
+6. Base mainnet is refused. Nothing is signed or sent from this app.
+
+Example merchant address on file for a later pilot, not a default and not enabled on mainnet: `0xCc15552e20ed43c47a1EEBf781c905Cd1117CEa3`.
+
+Sepolia demo, test funds only:
+
+1. Merchant screen, live test: enter a Base Sepolia address you control and a price, then create the request.
+2. Paste the share link (the one ending in `#ref=`) into the buyer screen. Open in wallet. The wallet asks for a normal EURC transfer on Base Sepolia (chain id 84532) for the exact amount shown. Confirm there, with test tokens.
+3. Copy the transaction hash from the wallet.
+4. Paste it into either panel and choose "Match this transaction".
+5. The line moves from unpaid (or ambiguous, if another transfer of that amount exists) to pending, then to confirmed after 12 blocks. The panel polls about every 6 seconds. A bound hash is read with one `eth_getTransactionReceipt` (the Transfer logs in that receipt). It only reads `sepolia.base.org`.

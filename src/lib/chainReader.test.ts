@@ -62,10 +62,27 @@ describe('chainReader: reading', () => {
   })
   it('sends only read-only RPC methods, ever', async () => {
     const calls: any[] = []
-    const r = reader(fakeFetch((m) => (m === 'eth_blockNumber' ? '0x10' : m === 'eth_getBlockByNumber' ? { number: '0x8' } : []), calls))
+    const r = reader(fakeFetch((m) => (m === 'eth_blockNumber' ? '0x10' : m === 'eth_getBlockByNumber' ? { number: '0x8' } : m === 'eth_getTransactionReceipt' ? null : []), calls))
     await r.headBlock(); await r.finalizedBlock(); await r.transfers({ chain: 'baseSepolia', token: 'EURC', merchant: MERCHANT, fromBlock: 0, toBlock: 5 })
-    expect(new Set(calls.map((c) => c.method))).toEqual(new Set(['eth_blockNumber', 'eth_getBlockByNumber', 'eth_getLogs']))
+    await r.transfersInTransaction({ chain: 'baseSepolia', token: 'EURC', txHash: h(1) })
+    expect(new Set(calls.map((c) => c.method))).toEqual(new Set(['eth_blockNumber', 'eth_getBlockByNumber', 'eth_getLogs', 'eth_getTransactionReceipt']))
     expect(calls.some((c) => /send|sign|submit|personal|unlock/i.test(c.method))).toBe(false)
+  })
+  it('reads one transaction receipt and keeps only that token Transfer logs', async () => {
+    const calls: any[] = []
+    const transfer = rawLog({ block: 9, value: 5n, tx: 4 })
+    const other = rawLog({ block: 9, value: 5n, tx: 4, address: CHAINS.baseSepolia.tokens.USDC })
+    const approval = { ...transfer, topics: [h(3), pad(PAYER), pad(MERCHANT)] }
+    const r = reader(fakeFetch(() => ({ status: '0x1', logs: [other, approval, transfer] }), calls))
+    const res = await r.transfersInTransaction({ chain: 'baseSepolia', token: 'EURC', txHash: transfer.transactionHash.toUpperCase() })
+    expect(calls[0].method).toBe('eth_getTransactionReceipt')
+    expect(calls[0].params).toEqual([transfer.transactionHash])
+    expect(res.logs).toHaveLength(1)
+    expect(res.logs[0]).toMatchObject({ txHash: transfer.transactionHash, value: 5n, to: MERCHANT })
+    const missing = reader(fakeFetch(() => null))
+    expect((await missing.transfersInTransaction({ chain: 'baseSepolia', token: 'EURC', txHash: h(2) })).logs).toEqual([])
+    const reverted = reader(fakeFetch(() => ({ status: '0x0', logs: [transfer] })))
+    expect((await reverted.transfersInTransaction({ chain: 'baseSepolia', token: 'EURC', txHash: h(3) })).logs).toEqual([])
   })
   it('splits a window into node-sized slices', async () => {
     const calls: any[] = []

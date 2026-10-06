@@ -6,8 +6,8 @@ import { spawnSync } from 'node:child_process'
 
 const M = [
   ['src/lib/confirmation.ts', 'confirmations < needed', 'confirmations <= needed', 'off-by-one on confirmations'],
-  ['src/lib/confirmation.ts', "if (previous && !hits.some((l) => sameTransfer(previous, l)))", 'if (false)', 'reorg detection removed'],
-  ['src/lib/confirmation.ts', 'if (hits.length > 1)', 'if (hits.length > 2)', 'two matches no longer ambiguous'],
+  ['src/lib/confirmation.ts', "if (previous && !chosen.some((l) => sameTransfer(previous, l)))", 'if (false)', 'reorg detection removed'],
+  ['src/lib/confirmation.ts', 'if (chosen.length > 1)', 'if (chosen.length > 2)', 'two matches no longer ambiguous'],
   ['src/lib/confirmation.ts', 'l.blockNumber >= window.fromBlock && ', '', 'window start ignored'],
   ['src/lib/confirmation.ts', 'if (previous && head < previous.head)', 'if (false)', 'lagging head not detected'],
   ['src/lib/confirmation.ts', 'hit.blockNumber <= input.finalized', 'hit.blockNumber < input.finalized', 'finalized boundary'],
@@ -24,7 +24,7 @@ const M = [
   ['src/lib/chainReader.ts', 'res.status === 429 || res.status >= 500', 'false', 'rate-limit retry removed'],
   ['src/lib/liveSession.ts', "if (chain === 'base' && !allowMainnet)", 'if (false)', 'mainnet guard removed'],
   ['src/lib/requestLink.ts', 'if (atomic <= 0n) throw', 'if (false) throw', 'zero amount accepted in link'],
-  ['src/lib/liveFetch.ts', "'eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber'", "'eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_sendRawTransaction'", 'write method allowed'],
+  ['src/lib/liveFetch.ts', "'eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getTransactionReceipt'", "'eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getTransactionReceipt', 'eth_sendRawTransaction'", 'write method allowed'],
   ['src/LivePanels.tsx', 'const testnetOnly = parsed !== null && parsed.chain !== CHAIN', 'const testnetOnly = false', 'buyer panel accepts mainnet link'],
 ]
 let survived = 0

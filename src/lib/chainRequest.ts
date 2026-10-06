@@ -1,6 +1,5 @@
 // Non-custodial payment request for EURC (default, = euro) or USDC on Base (EIP-681). The payer's own wallet sends; we never relay. No keys, no funds, no network calls here.
-// A plain ERC-20 transfer carries no order reference, so each open request gets a UNIQUE amount:
-// the base amount plus 1..MAX_TAG micro-USDC (<= 0.01 USDC overpay). Matching is by exact amount.
+// A plain ERC-20 transfer carries no memo. The share link can still carry a stable reference (see reference.ts); the amount tag below is only the secondary signal.
 
 export const CHAINS = {
   base: { id: 8453, tokens: { USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', EURC: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42' } },
@@ -39,6 +38,8 @@ export interface OpenRequest {
   readonly atomic: bigint // exact amount the payer must send, tag included
   readonly baseAtomic: bigint
   readonly tag: number
+  /** Stable id for this sale. The share link carries it in a fragment. Omitted on older amount-only requests. */
+  readonly reference?: string
 }
 
 /** Pick the smallest tag (1..MAX_TAG) that keeps the final amount unique among open requests. */

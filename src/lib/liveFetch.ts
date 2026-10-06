@@ -2,7 +2,7 @@
 // A test (readmeClaims.test.ts) checks that no other source file does, and that the RPC methods sent are read-only.
 import type { FetchLike } from './chainReader'
 
-export const READ_ONLY_METHODS = ['eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber'] as const
+export const READ_ONLY_METHODS = ['eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getTransactionReceipt'] as const
 
 export const browserFetch: FetchLike = (url, init) => {
   const method = (JSON.parse(init.body) as { method?: string }).method

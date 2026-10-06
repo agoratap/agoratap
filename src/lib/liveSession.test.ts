@@ -36,8 +36,10 @@ describe('live session end to end on a fake chain', () => {
     c.state.logs.push(c.mkLog(950, 1_000_001n)) // history: tag 1 already used
     const live = await openLiveRequest(c.reader, { orderId: 'a', chain: 'baseSepolia', merchant: M, eurAmount: 1 }, [], () => 0)
     expect(live.request.tag).toBe(2) // random=0 would give tag 1, but history excludes it
+    expect(live.request.reference).toMatch(/^0x[0-9a-f]{64}$/)
     expect(live.window.fromBlock).toBe(1000)
     expect(live.uri).toContain(`uint256=${live.request.atomic}`)
+    expect(live.uri).toContain(`#ref=${live.request.reference}`)
     let s = await refreshLive(c.reader, live)
     expect(s.status).toBe('unpaid'); expect(describeState(s)).toMatch(/Waiting/)
     c.state.logs.push(c.mkLog(1002, live.request.atomic)); c.state.head = 1005
