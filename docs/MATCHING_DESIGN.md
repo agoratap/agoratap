@@ -57,6 +57,10 @@ Sepolia demo, test funds only:
 
 `npm run sepolia:reference-e2e` uses the same `openLiveRequest`, share link, and `refreshLive` path as the panels. It talks only to `https://sepolia.base.org` and refuses chain id 8453. The throwaway signing key stays outside the repository.
 
+On a pull request and on `main`, CI runs `npm test` (that includes `scripts/sepoliaE2eGuard.test.ts`) and then `npm run sepolia:reference-e2e`. With no key in the CI environment the harness exits 0 before any RPC call. The same exit 0 happens when a key is present but test EURC or Base Sepolia ETH cannot cover the sale: no transaction is signed and `run.json` is not overwritten. Set `SEPOLIA_E2E_CREATE_KEY=1` to mint a throwaway key file, or `SEPOLIA_E2E_RECORD_BLOCKED=1` to keep the older "write the blocked run and exit 2" behaviour.
+
+A second attempt on a day that already has `run.json` writes `run-<timestamp>.json` beside it, so the first record stays. The live send still needs test ETH. `src/lib/fixtures/reference-confirm-replay.json` is a synthetic replay (not a chain receipt) of bind → pending → confirmed, including a missed hash, a wrong recipient, a wrong amount, a transfer before the window, a second equal amount that must not steal the match, two exact logs in the claimed transaction, a reorg, a head that moves backwards, and an expired window. `src/lib/referenceConfirmReplay.test.ts` plays that file through `refreshLive`. No ETH is required.
+
 The run recorded in `docs/evidence/sepolia-e2e-2026-10-06/` did this against the live testnet:
 
 - Chain id 84532. Test EURC `0x808456652fdb597867f38412077A9182bf77359F` returned symbol EURC and 6 decimals.

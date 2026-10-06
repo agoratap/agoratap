@@ -71,3 +71,31 @@ npm run sepolia:reference-e2e
 The script creates a new sale, sends one or two exact EURC transfers from that key, binds the first transaction hash, and polls `refreshLive` until the state is `confirmed` with `via: "reference"` (or records `pending` if 12 blocks have not elapsed). A second equal amount is sent when the balance allows, so the amount-tag path is `ambiguous` until the hash selects one. One hash cannot be bound to a second reference.
 
 Do not send mainnet ETH. Do not point the harness at another chain. Do not commit the key.
+
+## Follow-up the same day — still no payment
+
+A later run from a cloud VM, with no access to the key for `0x549b0C9384524fcA789B1Ca755A71085231249B9`, did not broadcast a payment either. Machine-readable notes: [`faucet-attempt.json`](faucet-attempt.json). Nothing in that file is a payment transaction hash.
+
+Re-read from `https://sepolia.base.org` (chain id 84532):
+
+| Address | Role | ETH | Test EURC |
+|---|---|---|---|
+| `0x549b0C9384524fcA789B1Ca755A71085231249B9` | Earlier payer. Key is not on this machine. | 0 wei | 20.000000 (unchanged) |
+| `0xBeC2bba3ad994BF909807a087bba8F210AC59e5f` | New throwaway. Key only in `/tmp` on that VM, not in git. | 0 wei | 0 |
+
+Faucet attempts from that VM, for the new address, none of which produced Base Sepolia ETH:
+
+| Source | Result |
+|---|---|
+| OriginTrail `POST /faucet/fund` mode `v10_base_sepolia` | HTTP 200. The ETH leg failed inside their faucet: their sender did not have enough gas (`have 686384993744341 want 1000550000000000`). No ETH arrived. A separate TRAC transfer did land (see the JSON). TRAC is not gas and not EURC, and it is not an Agora Pay payment. |
+| Circle public faucet `POST /api/graphql` `RequestToken` EURC on BASE, no captcha token | `RECAPTCHA_ERROR`. No account was created and no EURC was sent. |
+| QuickNode `POST /drip` form, chain `base`, network `sepolia`, address filled, empty auth token | Page text: "Invalid ETH mainnet balance." Mainnet funds were not sent to satisfy that check. |
+| Google Cloud Base Sepolia faucet | Page sends the browser to a Google sign-in and loads reCAPTCHA Enterprise. No account was created. |
+| Coinbase CDP faucet URL | HTTP 307. No account was created. |
+| Bware Labs | HTTP 530. |
+| ethereum-ecosystem.com Base Sepolia | HTTP 402. |
+| `faucet.zalalena.com/base` | HTTP 502. |
+| `learnweb3.io` and `faucet.triangleplatform.com` | HTTP 503. |
+| `faucet.paradigm.xyz` | DNS did not resolve. |
+
+Live send stays skipped. The harness now exits 0 in that situation instead of writing over this folder. `npm test` replays bind → confirmed from `src/lib/fixtures/reference-confirm-replay.json` without ETH. That replay is synthetic. It does not replace a confirmed Sepolia payment.

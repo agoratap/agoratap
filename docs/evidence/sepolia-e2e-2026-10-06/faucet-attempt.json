@@ -1,0 +1,92 @@
+{
+  "product": "Agora Pay",
+  "generatedAt": "2026-10-06T19:42:00.000Z",
+  "outcome": "skipped-live-send",
+  "mainnetEnabled": false,
+  "paymentSent": false,
+  "note": "No payment transaction was broadcast. The TRAC hash below is a faucet transfer of a different token, verified with eth_getTransactionReceipt on https://sepolia.base.org. It is not an Agora Pay match.",
+  "balancesReread": {
+    "rpc": "https://sepolia.base.org",
+    "chainId": 84532,
+    "previousPayer": {
+      "address": "0x549b0C9384524fcA789B1Ca755A71085231249B9",
+      "keyOnThisMachine": false,
+      "ethWei": "0",
+      "eurcAtomic": "20000000"
+    },
+    "newThrowaway": {
+      "address": "0xBeC2bba3ad994BF909807a087bba8F210AC59e5f",
+      "keyInGit": false,
+      "ethWei": "0",
+      "eurcAtomic": "0"
+    }
+  },
+  "attempts": [
+    {
+      "source": "OriginTrail POST https://euphoria.origin-trail.network/faucet/fund",
+      "mode": "v10_base_sepolia",
+      "http": 200,
+      "eth": {
+        "status": "failed",
+        "error": "Faucet sender lacked gas: have 686384993744341 want 1000550000000000. No ETH arrived."
+      },
+      "trac": {
+        "status": "success",
+        "txHash": "0xb5a30ddad6e9b97722d9fd00d1742da4cd5efaa1410abff3f4b9cc9893753071",
+        "receiptStatus": "0x1",
+        "blockNumber": 47773631,
+        "token": "0x2a58bdd13176d85906d804cdbffa0d9119282dc8",
+        "from": "0x0fc38655994c05b2def8a5e539d6f85990192ae7",
+        "to": "0xBeC2bba3ad994BF909807a087bba8F210AC59e5f",
+        "isAgoraPayPayment": false,
+        "explorer": "https://sepolia.basescan.org/tx/0xb5a30ddad6e9b97722d9fd00d1742da4cd5efaa1410abff3f4b9cc9893753071"
+      }
+    },
+    {
+      "source": "Circle POST https://faucet.circle.com/api/graphql RequestToken EURC BASE",
+      "http": 200,
+      "error": "RECAPTCHA_ERROR",
+      "accountCreated": false
+    },
+    {
+      "source": "QuickNode POST https://faucet.quicknode.com/drip",
+      "http": 200,
+      "error": "Invalid ETH mainnet balance.",
+      "mainnetFundsSent": false
+    },
+    {
+      "source": "Google Cloud Base Sepolia faucet",
+      "http": 200,
+      "error": "Page redirects to Google sign-in and loads reCAPTCHA Enterprise. No account created."
+    },
+    {
+      "source": "Coinbase CDP faucet",
+      "http": 307,
+      "accountCreated": false
+    },
+    {
+      "source": "Bware Labs",
+      "http": 530
+    },
+    {
+      "source": "ethereum-ecosystem.com Base Sepolia",
+      "http": 402
+    },
+    {
+      "source": "https://faucet.zalalena.com/base",
+      "http": 502
+    },
+    {
+      "source": "learnweb3.io Base Sepolia",
+      "http": 503
+    },
+    {
+      "source": "faucet.triangleplatform.com Base Sepolia",
+      "http": 503
+    },
+    {
+      "source": "faucet.paradigm.xyz",
+      "error": "DNS did not resolve"
+    }
+  ]
+}

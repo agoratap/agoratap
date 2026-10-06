@@ -6,19 +6,25 @@
 //
 //   npm run sepolia:reference-e2e
 //
-// Evidence: docs/evidence/sepolia-e2e-<UTC date>/run.json
+// Skip-clean (exit 0, no evidence write, no transaction):
+//   - no SEPOLIA_PAYER_KEY and no key file (a key is not created unless SEPOLIA_E2E_CREATE_KEY=1)
+//   - key present but test EURC or Base Sepolia ETH cannot cover the sale and gas
+// SEPOLIA_E2E_RECORD_BLOCKED=1 keeps the older behaviour: write run.json and exit 2 when unfunded.
+//
+// Evidence, only after a real attempt or a recorded block: docs/evidence/sepolia-e2e-<UTC date>/run.json
+// If run.json is already there, a later attempt writes run-<timestamp>.json and leaves the first file in place.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createPublicClient, createWalletClient, defineChain, http, parseAbi, type Address, type Hex, type TransactionReceipt } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { createChainReader, PUBLIC_RPC, TRANSFER_TOPIC, type FetchLike } from '../src/lib/chainReader'
-import { CHAINS, formatUsdc, type OpenRequest } from '../src/lib/chainRequest'
+import { CHAINS, formatUsdc, toAtomicEurc, type OpenRequest } from '../src/lib/chainRequest'
 import { type PaymentState } from '../src/lib/confirmation'
 import { bindLiveClaim, describeState, openLiveRequest, refreshLive } from '../src/lib/liveSession'
 import { createReference } from '../src/lib/reference'
 import { parseRequestLink, walletTransferUri } from '../src/lib/requestLink'
-import { assertKeyFileOutsideRepo, assertNoSecrets, assertSepoliaChainId, assertSepoliaRpc, SEPOLIA_CHAIN_ID, SEPOLIA_RPC } from './sepoliaE2eGuard'
+import { assertKeyFileOutsideRepo, assertNoSecrets, assertSepoliaChainId, assertSepoliaRpc, decideAfterBalances, decideHarnessStart, ethForTransfers, SEPOLIA_CHAIN_ID, SEPOLIA_RPC } from './sepoliaE2eGuard'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const EURC = CHAINS.baseSepolia.tokens.EURC as Address
@@ -110,6 +116,15 @@ function safe(error: unknown, secret: string): string {
 async function main() {
   if (PUBLIC_RPC.baseSepolia !== SEPOLIA_RPC) throw new Error('App Sepolia RPC constant changed; refusing to run')
   assertSepoliaRpc(SEPOLIA_RPC)
+  const keyFile = process.env.SEPOLIA_PAYER_KEY_FILE?.trim() || '/tmp/agorapay-sepolia-e2e.key'
+  const hasKey = Boolean(process.env.SEPOLIA_PAYER_KEY?.trim()) || existsSync(keyFile)
+  const start = decideHarnessStart({ hasKey, createKey: process.env.SEPOLIA_E2E_CREATE_KEY === '1' })
+  if (start.action === 'skip') {
+    process.stderr.write(`SKIP ${start.reason}\n`)
+    process.exitCode = start.exitCode
+    return
+  }
+  const recordBlocked = process.env.SEPOLIA_E2E_RECORD_BLOCKED === '1'
   const secret = loadPayerKey()
   const payer = privateKeyToAccount(secret)
   const merchant = privateKeyToAccount(generatePrivateKey()).address
@@ -135,7 +150,6 @@ async function main() {
 
   const day = evidence.generatedAt as string
   const outDir = join(repoRoot, 'docs/evidence', `sepolia-e2e-${day.slice(0, 10)}`)
-  const outFile = join(outDir, 'run.json')
   const write = () => {
     assertNoSecrets(evidence)
     const json = JSON.stringify(evidence, null, 2)
@@ -143,7 +157,13 @@ async function main() {
       throw new Error('Refusing to write evidence that contains the payer key')
     }
     mkdirSync(outDir, { recursive: true })
+    let outFile = join(outDir, 'run.json')
+    if (existsSync(outFile)) {
+      const stamp = String(evidence.generatedAt).replace(/[:.]/g, '-')
+      outFile = join(outDir, `run-${stamp}.json`)
+    }
     writeFileSync(outFile, json + '\n')
+    return outFile
   }
 
   try {
@@ -162,6 +182,25 @@ async function main() {
     evidence.balancesBefore = { ethWei: eth.toString(), eurcAtomic: eurc.toString(), eurc: formatUsdc(eurc) }
     evidence.gasPriceWei = gasPrice.toString()
     evidence.headBefore = headNow.head
+
+    let mainnetError = ''
+    try {
+      await openLiveRequest(reader, { orderId: 'mainnet-must-fail', chain: 'base', merchant, eurAmount: 0.1 }, [], () => 0)
+    } catch (error) {
+      mainnetError = safe(error, secret)
+    }
+    evidence.mainnetGuard = mainnetError
+    if (!/Mainnet is disabled/.test(mainnetError)) throw new Error(`Mainnet guard did not trip: ${mainnetError}`)
+
+    const saleFloor = toAtomicEurc(0.1)
+    const minEth = ethForTransfers(gasPrice, 1)
+    if (!recordBlocked && (eurc < saleFloor || eth < minEth)) {
+      const early = decideAfterBalances({ eurcAtomic: eurc, saleAtomic: saleFloor, ethWei: eth, gasPriceWei: gasPrice, recordBlocked: false })
+      if (early.action !== 'skip') throw new Error('An unfunded payer must skip without sending')
+      process.stderr.write(`SKIP ${early.reason}\n`)
+      process.exitCode = early.exitCode
+      return
+    }
 
     const inbound = await reader.transfers({
       chain: 'baseSepolia',
@@ -187,15 +226,6 @@ async function main() {
       })
     }
     evidence.inboundEurc = inboundRows
-
-    let mainnetError = ''
-    try {
-      await openLiveRequest(reader, { orderId: 'mainnet-must-fail', chain: 'base', merchant, eurAmount: 0.1 }, [], () => 0)
-    } catch (error) {
-      mainnetError = safe(error, secret)
-    }
-    evidence.mainnetGuard = mainnetError
-    if (!/Mainnet is disabled/.test(mainnetError)) throw new Error(`Mainnet guard did not trip: ${mainnetError}`)
 
     process.stderr.write('Opening a live Sepolia sale (24h history read)...\n')
     const live = await openLiveRequest(
@@ -224,25 +254,26 @@ async function main() {
     evidence.panels = panels
 
     const atomic = live.request.atomic
-    const two = eurc >= atomic * 2n
-    const one = eurc >= atomic
-    const transfersWanted = two ? 2 : one ? 1 : 0
-    const fee = gasPrice * 150_000n
-    const ethNeed = fee * BigInt(Math.max(transfersWanted, 1)) * 3n
-    evidence.ethNeedWei = ethNeed.toString()
-    if (!one || eth < ethNeed) {
-      evidence.outcome = 'blocked'
-      evidence.blocker = !one
-        ? `Payer EURC balance ${formatUsdc(eurc)} is below the sale amount ${formatUsdc(atomic)}.`
-        : `Payer has ${formatUsdc(eurc)} test EURC but ${eth.toString()} wei of Base Sepolia ETH. A transfer at the observed gas price needs about ${ethNeed.toString()} wei. No transaction was sent.`
-      evidence.nextUnlock = !one
-        ? `Fund ${payer.address} with test EURC at ${EURC} on Base Sepolia (chain 84532), then re-run npm run sepolia:reference-e2e. Do not use mainnet.`
-        : `Fund ${payer.address} with Base Sepolia ETH for gas (testnet only; do not send mainnet ETH or flip any mainnet flag), then re-run npm run sepolia:reference-e2e. The sale above was created and left unpaid.`
-      write()
-      process.stderr.write(`BLOCKED ${evidence.blocker}\nWrote ${outFile}\n`)
-      process.exitCode = 2
+    const plan = decideAfterBalances({ eurcAtomic: eurc, saleAtomic: atomic, ethWei: eth, gasPriceWei: gasPrice, recordBlocked })
+    if (plan.ethNeedWei === undefined) throw new Error('Funding plan did not compute a gas buffer')
+    evidence.ethNeedWei = plan.ethNeedWei.toString()
+    if (plan.action === 'skip') {
+      process.stderr.write(`SKIP ${plan.reason}\n`)
+      process.exitCode = plan.exitCode
       return
     }
+    if (plan.action === 'blocked') {
+      evidence.outcome = 'blocked'
+      evidence.blocker = plan.reason
+      evidence.nextUnlock = eurc < atomic
+        ? `Fund ${payer.address} with test EURC at ${EURC} on Base Sepolia (chain 84532), then re-run npm run sepolia:reference-e2e. Do not use mainnet.`
+        : `Fund ${payer.address} with Base Sepolia ETH for gas (testnet only; do not send mainnet ETH or flip any mainnet flag), then re-run npm run sepolia:reference-e2e. The sale above was created and left unpaid.`
+      const blockedFile = write()
+      process.stderr.write(`BLOCKED ${plan.reason}\nWrote ${blockedFile}\n`)
+      process.exitCode = plan.exitCode
+      return
+    }
+    const transfersWanted = plan.transfers
 
     process.stderr.write(`Sending ${transfersWanted} EURC transfer(s) of ${formatUsdc(atomic)} to ${merchant}...\n`)
     const sent: Array<{ hash: Hex; receipt: TransactionReceipt }> = []
@@ -308,8 +339,8 @@ async function main() {
     evidence.matched = state.status === 'pending' || state.status === 'confirmed'
       ? { status: state.status, via: state.via, confirmations: state.confirmations, final: state.status === 'confirmed' ? state.final : false, txHash: state.seen.txHash }
       : null
-    write()
-    process.stderr.write(`Wrote ${outFile} outcome ${String(evidence.outcome)}\n`)
+    const wrote = write()
+    process.stderr.write(`Wrote ${wrote} outcome ${String(evidence.outcome)}\n`)
     if (evidence.outcome === 'incomplete') process.exitCode = 1
   } catch (error) {
     evidence.outcome = 'error'

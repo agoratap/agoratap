@@ -58,9 +58,12 @@ Requirements: Node.js 22+ and npm.
 ```bash
 npm ci
 npm run dev       # open the URL Vite prints
-npm test
+npm test          # includes the Sepolia harness guards and the offline reference replay
 npm run build
+npm run sepolia:reference-e2e
 ```
+
+`npm run sepolia:reference-e2e` is a hand-run Base Sepolia script, not part of the app. With no payer key, or with a key that lacks test EURC or Base Sepolia ETH, it prints `SKIP` and exits 0. It does not create a key, does not write evidence, and does not send a transaction. CI runs it that way. A key is created only when `SEPOLIA_E2E_CREATE_KEY=1`. `SEPOLIA_E2E_RECORD_BLOCKED=1` writes a blocked `run.json` and exits 2. The key stays outside the repo. The script refuses Base mainnet.
 
 State is stored only in your browser. The reset icon in the header clears it.
 
