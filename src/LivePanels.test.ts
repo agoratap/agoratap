@@ -39,6 +39,10 @@ describe('live test panels', () => {
     expect(html).toMatch(/not who sent it/)
     expect(html).toMatch(/transaction hash/i)
     expect(html).toMatch(/sees your IP address/)
+    expect(html).toMatch(/sepolia\.base\.org/)
+    expect(html).toMatch(/public fallback/)
+    expect(html).toMatch(/Mainnet is not contacted/)
+    expect(html).not.toMatch(/mainnet\.base\.org/)
   })
   it('buyer panel shows exactly what a testnet link asks, and offers wallet + watch', () => {
     const html = buyer(eip681Uri(r('baseSepolia')))

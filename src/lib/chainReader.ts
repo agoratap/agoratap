@@ -1,6 +1,6 @@
 // READ-ONLY blockchain reader for ERC-20 Transfer logs on Base (EURC / USDC), through a public JSON-RPC endpoint.
-// - No key, no signing, no transaction: only eth_blockNumber, eth_getLogs, eth_getBlockByNumber and
-//   eth_getTransactionReceipt are ever sent.
+// - No key, no signing, no transaction: eth_blockNumber, eth_getLogs, eth_getBlockByNumber and
+//   eth_getTransactionReceipt. eth_chainId is sent only when a reader is asked to confirm Base Sepolia.
 // - Network access is INJECTED (`fetchFn`), so every test runs without a network and the app decides what to pass.
 // - Logs are filtered by the node (token address + Transfer topic + recipient topic), not downloaded wholesale.
 // - It returns observed facts (with block hash and log index, so a later reorg can be detected). It decides nothing:
@@ -10,11 +10,44 @@ import { normalizeTxHash } from './reference'
 
 export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
+/**
+ * Keyless public Base Sepolia endpoints, primary first. No API keys.
+ * Mainnet is not in this list. The pages app reads these; the Sepolia harness stays on the primary only.
+ */
+export const SEPOLIA_RPC_URLS = [
+  'https://sepolia.base.org',
+  'https://base-sepolia-rpc.publicnode.com',
+] as const
+
 /** The only endpoints the app is allowed to talk to. Public, keyless, rate limited: a hand-picked list, not a user input. */
 export const PUBLIC_RPC = {
   base: 'https://mainnet.base.org',
-  baseSepolia: 'https://sepolia.base.org',
+  baseSepolia: SEPOLIA_RPC_URLS[0],
 } as const satisfies Record<ChainName, string>
+
+/** Shown when every configured Base Sepolia URL has failed. Mainnet is not implied and is not contacted. */
+export const SEPOLIA_RPC_FAILURE_COPY =
+  'Could not read Base Sepolia. The public endpoint sepolia.base.org failed, and the fallback endpoint failed too. Mainnet was not contacted. Nothing was signed or sent. Try again in a moment.'
+
+/** Rejects a Sepolia fallback list that is missing the official primary, carries a key, or points at Base mainnet. */
+export function assertSepoliaFallbackList(urls: readonly string[]): readonly string[] {
+  if (urls.length < 2) throw new ChainReadError('bad-input', 'Base Sepolia needs https://sepolia.base.org and at least one public fallback')
+  for (const [index, url] of urls.entries()) {
+    let parsed: URL
+    try { parsed = new URL(url) } catch { throw new ChainReadError('bad-input', 'RPC URL is not valid') }
+    const pathOk = parsed.pathname === '/' || parsed.pathname === ''
+    if (parsed.protocol !== 'https:' || !pathOk || parsed.username !== '' || parsed.password !== '' || parsed.search !== '' || parsed.hash !== '') {
+      throw new ChainReadError('bad-input', 'RPC URLs must be keyless https endpoints with no query string')
+    }
+    if (parsed.hostname === 'mainnet.base.org') {
+      throw new ChainReadError('bad-input', 'Mainnet is disabled at this stage: use Base Sepolia (test funds only)')
+    }
+    if (index === 0 && parsed.hostname !== 'sepolia.base.org') {
+      throw new ChainReadError('bad-input', 'Primary RPC must be https://sepolia.base.org')
+    }
+  }
+  return urls
+}
 
 export interface FetchResponseLike {
   readonly ok: boolean
@@ -43,6 +76,17 @@ export class ChainReadError extends Error {
 export interface ReaderOptions {
   readonly fetchFn: FetchLike
   readonly rpcUrl: string
+  /**
+   * When set, these URLs are tried in order after the current one fails at the transport layer
+   * (timeout, network error, or HTTP 429/5xx once its retries are used). The first must be
+   * https://sepolia.base.org. Mainnet hosts are refused before any call. A JSON-RPC error stays
+   * on the URL that returned it.
+   */
+  readonly rpcUrls?: readonly string[]
+  /** Abandon one attempt after this many milliseconds, then try the next URL. 0 or omitted: no timeout. */
+  readonly timeoutMs?: number
+  /** When set, the first successful contact to a URL must return this chain id (Base Sepolia is 84532). Chain id 8453 is refused. */
+  readonly expectChainId?: number
   /** Widest eth_getLogs span first tried (the public Base endpoint rejects > 1000 with HTTP 413 + JSON-RPC -32614, observed 2026-10-03). */
   readonly maxRange?: number
   /** Hard cap on RPC calls per operation, so a bug or a huge window cannot hammer a free public endpoint. */
@@ -113,22 +157,45 @@ export function createChainReader(opts: ReaderOptions) {
   const maxCalls = opts.maxCalls ?? 200
   const retries = opts.retries ?? 4
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
+  const timeoutMs = opts.timeoutMs ?? 0
+  const endpoints = opts.rpcUrls && opts.rpcUrls.length > 0 ? [...opts.rpcUrls] : [opts.rpcUrl]
+  if (opts.rpcUrls && opts.rpcUrls.length > 0) assertSepoliaFallbackList(endpoints)
   if (!Number.isInteger(maxRange) || maxRange < 1) throw new ChainReadError('bad-input', 'maxRange must be a positive integer')
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 0) throw new ChainReadError('bad-input', 'timeoutMs must be a non-negative integer')
 
-  async function rpc(state: { calls: number }, method: string, params: unknown[]): Promise<unknown> {
-    let res: FetchResponseLike
+  let preferred = 0
+  const chainOk = new Set<string>()
+
+  async function fetchAt(url: string, body: string): Promise<FetchResponseLike> {
+    const init = { method: 'POST' as const, headers: { 'content-type': 'application/json' }, body }
+    if (timeoutMs < 1) return opts.fetchFn(url, { ...init, signal: opts.signal })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const onParent = () => controller.abort()
+    opts.signal?.addEventListener('abort', onParent)
+    try {
+      return await opts.fetchFn(url, { ...init, signal: controller.signal })
+    } catch (error) {
+      if (opts.signal?.aborted) throw error
+      if (controller.signal.aborted) throw new ChainReadError('http-error', `RPC timed out after ${timeoutMs}ms`)
+      throw error
+    } finally {
+      clearTimeout(timer)
+      opts.signal?.removeEventListener('abort', onParent)
+    }
+  }
+
+  /** One URL, including its HTTP 429/5xx retries. Does not switch URLs. */
+  async function call(state: { calls: number }, url: string, method: string, params: unknown[]): Promise<unknown> {
+    let res: FetchResponseLike | undefined
     for (let attempt = 0; ; attempt++) {
       if (state.calls >= maxCalls) throw new ChainReadError('budget', `Stopped after ${maxCalls} RPC calls`)
       state.calls++ // retries count against the budget too
-      res = await opts.fetchFn(opts.rpcUrl, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: state.calls, method, params }),
-        signal: opts.signal,
-      })
+      res = await fetchAt(url, JSON.stringify({ jsonrpc: '2.0', id: state.calls, method, params }))
       if (res.ok || !(res.status === 429 || res.status >= 500) || attempt >= retries) break
       await sleep(500 * 2 ** attempt)
     }
+    if (!res) throw new ChainReadError('http-error', 'RPC did not answer')
     let body: { result?: unknown; error?: { code?: number; message?: string } }
     try {
       body = (await res.json()) as { result?: unknown; error?: { code?: number; message?: string } }
@@ -137,12 +204,59 @@ export function createChainReader(opts: ReaderOptions) {
       throw new ChainReadError('bad-response', 'RPC answer is not valid JSON')
     }
     if (body !== null && typeof body === 'object' && body.error) {
+      // A 429/5xx is an endpoint failure even when the body is a JSON-RPC error. HTTP 413 stays an rpc-error so a too-wide log range can be split.
+      if (res.status === 429 || res.status >= 500) throw new ChainReadError('http-error', `RPC answered HTTP ${res.status}`)
       throw new ChainReadError('rpc-error', `${method}: ${body.error.code ?? ''} ${body.error.message ?? ''}`.trim())
     }
     if (!res.ok) throw new ChainReadError('http-error', `RPC answered HTTP ${res.status}`)
     if (body === null || typeof body !== 'object') throw new ChainReadError('bad-response', 'RPC answer is not an object')
     if (!('result' in body)) throw new ChainReadError('bad-response', 'RPC answer has neither result nor error')
     return body.result
+  }
+
+  async function ensureChain(state: { calls: number }, url: string): Promise<void> {
+    if (opts.expectChainId === undefined || chainOk.has(url)) return
+    const id = hexToInt(await call(state, url, 'eth_chainId', []), 'chain id')
+    if (id === CHAINS.base.id) throw new ChainReadError('rpc-error', 'Mainnet is disabled at this stage: use Base Sepolia (test funds only)')
+    if (id !== opts.expectChainId) throw new ChainReadError('rpc-error', `Refusing chain id ${id}. This pilot reads Base Sepolia (${opts.expectChainId}) only.`)
+    chainOk.add(url)
+  }
+
+  function endpointFailure(error: unknown): boolean {
+    if (!(error instanceof ChainReadError)) return true
+    if (/Mainnet is disabled|Refusing chain id/.test(error.message)) return true
+    if (error.code === 'bad-response') return true
+    if (error.code !== 'http-error') return false
+    const status = Number(error.message.match(/HTTP (\d+)/)?.[1])
+    if (!Number.isInteger(status)) return true
+    return status === 408 || status === 429 || status >= 500
+  }
+
+  function chainRefusal(error: unknown): boolean {
+    return error instanceof ChainReadError && /Mainnet is disabled|Refusing chain id/.test(error.message)
+  }
+
+  async function rpc(state: { calls: number }, method: string, params: unknown[]): Promise<unknown> {
+    let last: unknown
+    for (let n = 0; n < endpoints.length; n++) {
+      const index = (preferred + n) % endpoints.length
+      const url = endpoints[index]
+      try {
+        await ensureChain(state, url)
+        const result = await call(state, url, method, params)
+        preferred = index
+        return result
+      } catch (error) {
+        last = error
+        const more = n < endpoints.length - 1
+        if (more && endpointFailure(error)) continue
+        if (!more && endpoints.length > 1 && endpointFailure(error) && !chainRefusal(error)) {
+          throw new ChainReadError(error instanceof ChainReadError ? error.code : 'http-error', SEPOLIA_RPC_FAILURE_COPY)
+        }
+        throw error
+      }
+    }
+    throw last
   }
 
   async function headBlock(): Promise<{ head: number; rpcCalls: number }> {
@@ -159,7 +273,10 @@ export function createChainReader(opts: ReaderOptions) {
       if (!block || block.number === undefined) return { finalized: null, rpcCalls: state.calls }
       return { finalized: hexToInt(block.number, 'finalized block'), rpcCalls: state.calls }
     } catch (e) {
-      if (e instanceof ChainReadError && e.code === 'rpc-error') return { finalized: null, rpcCalls: state.calls }
+      // A node that does not support the finalized tag answers with an RPC error. A chain-id refusal must still surface.
+      if (e instanceof ChainReadError && e.code === 'rpc-error' && !/Mainnet is disabled|Refusing chain id/.test(e.message)) {
+        return { finalized: null, rpcCalls: state.calls }
+      }
       throw e
     }
   }
@@ -237,6 +354,25 @@ export function createChainReader(opts: ReaderOptions) {
   }
 
   return { headBlock, finalizedBlock, transfers, transfersInTransaction }
+}
+
+/** Browser live panels: primary sepolia.base.org, one keyless fallback, 8s timeout, chain id 84532 required. */
+export function createSepoliaPanelReader(
+  fetchFn: FetchLike,
+  extra: Partial<Omit<ReaderOptions, 'fetchFn' | 'rpcUrl' | 'rpcUrls' | 'expectChainId'>> = {},
+) {
+  assertSepoliaFallbackList(SEPOLIA_RPC_URLS)
+  return createChainReader({
+    timeoutMs: 8_000,
+    retries: 1,
+    maxRange: 501,
+    maxCalls: 120,
+    ...extra,
+    fetchFn,
+    rpcUrl: SEPOLIA_RPC_URLS[0],
+    rpcUrls: SEPOLIA_RPC_URLS,
+    expectChainId: CHAINS.baseSepolia.id,
+  })
 }
 
 export type ChainReader = ReturnType<typeof createChainReader>

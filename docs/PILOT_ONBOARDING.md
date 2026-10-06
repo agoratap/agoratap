@@ -15,7 +15,7 @@ The steps below match the merchant and buyer **live test** panels and `docs/MATC
 1. Open **New sale**.
 2. In **Live test (Base Sepolia, read-only)**, enter a receiving address you control. Do not type an address you do not control.
 3. Enter a small price, for example `1`.
-4. Choose **Create live test request**. The page reads recent transfers from `sepolia.base.org`. That endpoint sees your IP address. The panel shows the exact EURC amount, the share link ending in `#ref=`, and the block window.
+4. Choose **Create live test request**. The page reads recent transfers from `sepolia.base.org`. If that endpoint times out or keeps failing, it tries one public fallback (`base-sepolia-rpc.publicnode.com`) and then stops. Both see your IP address. Neither is Base mainnet. If both fail, the page says it could not read Base Sepolia. The panel shows the exact EURC amount, the share link ending in `#ref=`, and the block window.
 5. Choose **Export sale backup** and keep the JSON file. It is a readable sale record. It has no wallet key. Keys stay in your wallet.
 
 ## Buyer
