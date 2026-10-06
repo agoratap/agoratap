@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { BuyerLive, MerchantLive, buyerWatchWindow } from './LivePanels'
 import { eip681Uri, type OpenRequest } from './lib/chainRequest'
+import { paymentRequestLink } from './lib/reference'
 import { OFAC_LIST } from './lib/screening'
 
 const M = '0x1111111111111111111111111111111111111111'
@@ -21,6 +22,7 @@ describe('live test panels', () => {
     expect(html).toMatch(/Test tokens have no value/)
     expect(html).toMatch(/never signs, sends or holds anything/)
     expect(html).toMatch(/not who sent it/)
+    expect(html).toMatch(/transaction hash/i)
     expect(html).toMatch(/sees your IP address/)
   })
   it('buyer panel shows exactly what a testnet link asks, and offers wallet + watch', () => {
@@ -36,6 +38,17 @@ describe('live test panels', () => {
     expect(html).toMatch(/Do not pay it from here/)
     expect(html).not.toContain('Open in my wallet')
     expect(html).not.toContain('Watch the chain')
+    expect(html).not.toContain('Match this transaction')
+  })
+  it('buyer wallet link is a plain transfer and the reference stays on the share link', () => {
+    const reference = '0x' + 'ab'.repeat(32)
+    const html = buyer(paymentRequestLink({ ...r('baseSepolia'), reference }))
+    expect(html).toContain(reference)
+    expect(html).toContain('Transaction hash')
+    expect(html).toContain('Match this transaction')
+    const href = html.match(/href="([^"]+)"/)?.[1] ?? ''
+    expect(href.replace(/&amp;/g, '&')).toBe(eip681Uri(r('baseSepolia')))
+    expect(href).not.toMatch(/#ref=|%23ref=/)
   })
   it('buyer panel warns on junk links and on an OFAC-listed merchant (warn only)', () => {
     expect(buyer('https://evil.example')).toMatch(/Not an Agora Pay payment link/)

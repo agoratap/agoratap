@@ -39,7 +39,7 @@ describe('README claims', () => {
 
   it(OWN[2], () => {
     const gateway = codeOnly(appSources.find(([path]) => path.endsWith('/liveFetch.ts'))![1])
-    expect(gateway).toContain("READ_ONLY_METHODS = ['eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber']")
+    expect(gateway).toContain("READ_ONLY_METHODS = ['eth_blockNumber', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getTransactionReceipt']")
     const all = appSources.map(([, t]) => codeOnly(t)).join('\n')
     expect(all).not.toMatch(/eth_sendRawTransaction|eth_sendTransaction|eth_sign|personal_sign|signTypedData|privateKey|mnemonic|window\.ethereum/)
     expect(all).not.toMatch(/\b(ethers|viem|web3)\b/)

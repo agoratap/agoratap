@@ -6,7 +6,8 @@
 //   2. amounts that already hit this merchant recently (on-chain history) are excluded from the draw;
 //   3. a payment only counts inside the request's block window (see confirmation.ts);
 //   4. two matching transfers are always `ambiguous`, never "paid";
-//   5. a reference-bearing design (EIP-3009 nonce / router contract) is the documented next step, not built: docs/MATCHING_DESIGN.md.
+//   5. the transfer's own transaction hash is the on-chain id. Binding it to a stable payment reference is built
+//      (reference.ts). EIP-3009 and a router contract are not: docs/MATCHING_DESIGN.md.
 // Pure functions. The random source is injected so the tests are deterministic.
 import { MAX_TAG, isAddress, type ChainName, type OpenRequest, type TokenSymbol } from './chainRequest'
 

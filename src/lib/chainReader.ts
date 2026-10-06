@@ -1,10 +1,12 @@
 // READ-ONLY blockchain reader for ERC-20 Transfer logs on Base (EURC / USDC), through a public JSON-RPC endpoint.
-// - No key, no signing, no transaction: only eth_blockNumber, eth_getLogs and eth_getBlockByNumber are ever sent.
+// - No key, no signing, no transaction: only eth_blockNumber, eth_getLogs, eth_getBlockByNumber and
+//   eth_getTransactionReceipt are ever sent.
 // - Network access is INJECTED (`fetchFn`), so every test runs without a network and the app decides what to pass.
 // - Logs are filtered by the node (token address + Transfer topic + recipient topic), not downloaded wholesale.
 // - It returns observed facts (with block hash and log index, so a later reorg can be detected). It decides nothing:
 //   matching and confirmation rules live in chainRequest.ts / confirmation.ts.
 import { CHAINS, isAddress, type ChainName, type TokenSymbol, type TransferLog } from './chainRequest'
+import { normalizeTxHash } from './reference'
 
 export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
@@ -210,7 +212,31 @@ export function createChainReader(opts: ReaderOptions) {
     return { logs, rpcCalls: state.calls }
   }
 
-  return { headBlock, finalizedBlock, transfers }
+  /** Transfer logs inside one transaction. Used when a payment reference is bound to a hash, so the read is one receipt, not a day of logs. */
+  async function transfersInTransaction(q: { chain: ChainName; token: TokenSymbol; txHash: string }): Promise<ReadResult> {
+    const txHash = normalizeTxHash(q.txHash)
+    const tokenAddress = CHAINS[q.chain].tokens[q.token].toLowerCase()
+    const state = { calls: 0 }
+    const receipt = await rpc(state, 'eth_getTransactionReceipt', [txHash])
+    if (receipt === null) return { logs: [], rpcCalls: state.calls }
+    if (typeof receipt !== 'object') throw new ChainReadError('bad-response', 'Transaction receipt is not an object')
+    const rec = receipt as { status?: unknown; logs?: unknown }
+    if (rec.status === '0x0') return { logs: [], rpcCalls: state.calls }
+    if (!Array.isArray(rec.logs)) throw new ChainReadError('bad-response', 'Transaction receipt has no log list')
+    const logs: ObservedTransfer[] = []
+    for (const raw of rec.logs) {
+      if (typeof raw !== 'object' || raw === null) throw new ChainReadError('bad-log', 'Log is not an object')
+      const item = raw as { address?: unknown; topics?: unknown }
+      if (typeof item.address !== 'string' || item.address.toLowerCase() !== tokenAddress) continue
+      if (!Array.isArray(item.topics) || item.topics[0] !== TRANSFER_TOPIC) continue
+      const log = parseTransferLog(raw, tokenAddress)
+      if (log) logs.push(log)
+    }
+    logs.sort((a, b) => a.logIndex - b.logIndex)
+    return { logs, rpcCalls: state.calls }
+  }
+
+  return { headBlock, finalizedBlock, transfers, transfersInTransaction }
 }
 
 export type ChainReader = ReturnType<typeof createChainReader>
