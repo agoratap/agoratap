@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Throwaway keys for scripts/sepolia-reference-e2e.ts stay outside the repo.
+*.key
 .DS_Store
 *.local
 *.tsbuildinfo

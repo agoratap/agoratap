@@ -1,0 +1,75 @@
+{
+  "product": "Agora Pay",
+  "harness": "scripts/sepolia-reference-e2e.ts",
+  "generatedAt": "2026-10-06T19:29:17.270Z",
+  "rpc": "https://sepolia.base.org",
+  "chainIdExpected": 84532,
+  "mainnetEnabled": false,
+  "payer": "0x549b0C9384524fcA789B1Ca755A71085231249B9",
+  "merchant": "0x6B21cD62408419e64DE6A073F44D7B8a71B716e2",
+  "token": {
+    "symbol": "EURC",
+    "decimals": 6,
+    "address": "0x808456652fdb597867f38412077A9182bf77359F",
+    "chain": "baseSepolia"
+  },
+  "outcome": "blocked",
+  "chainId": 84532,
+  "balancesBefore": {
+    "ethWei": "0",
+    "eurcAtomic": "20000000",
+    "eurc": "20.000000"
+  },
+  "gasPriceWei": "6000000",
+  "headBefore": 47773334,
+  "inboundEurc": [
+    {
+      "txHash": "0x8e1b1bf62874dd3ae2ff8180fed89aafcf74f731c23dae112f38be73ccd41676",
+      "from": "0xfaec9cdc3ef75713b48f46057b98ba04885e3391",
+      "to": "0x549b0c9384524fca789b1ca755a71085231249b9",
+      "valueAtomic": "20000000",
+      "value": "20.000000",
+      "blockNumber": 47772257,
+      "blockHash": "0xad89b7bf495e241c2eaba72e1f24c126a3a78ca7b48d37d2f36c306a8317f327",
+      "logIndex": 96,
+      "receiptTransferCount": 1,
+      "explorer": "https://sepolia.basescan.org/tx/0x8e1b1bf62874dd3ae2ff8180fed89aafcf74f731c23dae112f38be73ccd41676"
+    }
+  ],
+  "mainnetGuard": "Mainnet is disabled at this stage: use Base Sepolia (test funds only)",
+  "sale": {
+    "request": {
+      "orderId": "sepolia-e2e-1791314960166",
+      "chain": "baseSepolia",
+      "token": "EURC",
+      "merchant": "0x6B21cD62408419e64DE6A073F44D7B8a71B716e2",
+      "atomic": "103724",
+      "baseAtomic": "100000",
+      "tag": 3724,
+      "reference": "0x76b0ca959af5d52cf7edcd9b6ca200f804c1c9136207ae52cc0034316ae96e3e",
+      "formatted": "0.103724 EURC"
+    },
+    "window": {
+      "fromBlock": 47773336,
+      "toBlock": 47775136
+    },
+    "shareLink": "ethereum:0x808456652fdb597867f38412077A9182bf77359F@84532/transfer?address=0x6B21cD62408419e64DE6A073F44D7B8a71B716e2&uint256=103724#ref=0x76b0ca959af5d52cf7edcd9b6ca200f804c1c9136207ae52cc0034316ae96e3e",
+    "walletLink": "ethereum:0x808456652fdb597867f38412077A9182bf77359F@84532/transfer?address=0x6B21cD62408419e64DE6A073F44D7B8a71B716e2&uint256=103724",
+    "referenceOnFragment": true,
+    "walletLinkOmitsReference": true
+  },
+  "panels": [
+    {
+      "step": "created-unpaid",
+      "state": {
+        "status": "unpaid",
+        "head": 47773342,
+        "expired": false,
+        "line": "Waiting: no matching transfer seen on chain yet."
+      }
+    }
+  ],
+  "ethNeedWei": "5400000000000",
+  "blocker": "Payer has 20.000000 test EURC but 0 wei of Base Sepolia ETH. A transfer at the observed gas price needs about 5400000000000 wei. No transaction was sent.",
+  "nextUnlock": "Fund 0x549b0C9384524fcA789B1Ca755A71085231249B9 with Base Sepolia ETH for gas (testnet only; do not send mainnet ETH or flip any mainnet flag), then re-run npm run sepolia:reference-e2e. The sale above was created and left unpaid."
+}
