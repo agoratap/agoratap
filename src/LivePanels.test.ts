@@ -38,7 +38,7 @@ describe('live test panels', () => {
     expect(html).not.toContain('Watch the chain')
   })
   it('buyer panel warns on junk links and on an OFAC-listed merchant (warn only)', () => {
-    expect(buyer('https://evil.example')).toMatch(/Not an AgoraTap payment link/)
+    expect(buyer('https://evil.example')).toMatch(/Not an Agora Pay payment link/)
     const listed = Object.keys(OFAC_LIST.addresses).find((a) => /^0x[0-9a-f]{40}$/.test(a))!
     const html = buyer(eip681Uri(r('baseSepolia', listed)))
     expect(html).toMatch(/appears on the public OFAC sanctions list/)

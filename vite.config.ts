@@ -3,15 +3,15 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: '/agoratap/',
+  base: '/agoratap/', // GitHub Pages path. Kept so the deployed URL does not change.
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'AgoraTap Demo',
-        short_name: 'AgoraTap',
-        description: 'Privacy-minded everyday payments prototype',
+        name: 'Agora Pay',
+        short_name: 'Agora Pay',
+        description: 'Early pilot. Non-custodial payments from your wallet to the merchant’s address.',
         theme_color: '#123b2e',
         background_color: '#f3f1e8',
         display: 'standalone',

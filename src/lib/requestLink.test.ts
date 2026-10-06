@@ -16,7 +16,7 @@ describe('payment link parsing', () => {
     const ok = eip681Uri(r)
     expect(() => parseRequestLink(ok.replace('0x808456652fdb597867f38412077A9182bf77359F', '0x' + '9'.repeat(40)))).toThrow(/Unknown token/)
     expect(() => parseRequestLink(ok.replace('@84532', '@1'))).toThrow(/Unknown token or chain/)
-    expect(() => parseRequestLink(ok + '&data=0x')).toThrow(/not an AgoraTap/i)
+    expect(() => parseRequestLink(ok + '&data=0x')).toThrow(/not an Agora Pay/i)
     expect(() => parseRequestLink(ok.replace('uint256=1000042', 'uint256=0'))).toThrow(/greater than zero/)
     expect(() => parseRequestLink(ok.replace('/transfer', '/approve'))).toThrow()
     expect(() => parseRequestLink('https://evil.example/' + ok)).toThrow()

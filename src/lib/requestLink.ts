@@ -13,7 +13,7 @@ const LINK = /^ethereum:(0x[0-9a-fA-F]{40})@(\d+)\/transfer\?address=(0x[0-9a-fA
 
 export function parseRequestLink(text: string): ParsedRequestLink {
   const m = LINK.exec(String(text ?? '').trim())
-  if (!m) throw new Error('Not an AgoraTap payment link')
+  if (!m) throw new Error('Not an Agora Pay payment link')
   const [, tokenAddress, chainId, merchant, amount] = m
   if (!isAddress(merchant)) throw new Error('Merchant address is not valid')
   for (const chain of Object.keys(CHAINS) as ChainName[]) {

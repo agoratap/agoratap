@@ -1,6 +1,6 @@
-# AgoraTap
+# Agora Pay
 
-AgoraTap is an early, unfinished project. This page says only what the code in this repository does today. Each statement in the "What the code does today" table points to a test that checks it. Anything not in that table should be read as not done.
+Agora Pay is an early pilot. This page says only what the code in this repository does today. Each statement in the "What the code does today" table points to a test that checks it. Anything not in that table should be read as not done.
 
 > **Nothing here handles real money.** There is no server, no account system, no custody and no service run by the authors. Do not send real funds because of anything you read in this repository.
 
@@ -8,7 +8,7 @@ AgoraTap is an early, unfinished project. This page says only what the code in t
 
 | # | What the code does | Checked by |
 |---|---|---|
-| 1 | The browser demo keeps its data in the browser's `localStorage` (key `agoratap-demo-v1`). Its source contains no `fetch`, XHR, WebSocket or web3-library call, except ONE file, `src/lib/liveFetch.ts`, which sends read-only JSON-RPC POSTs (`eth_blockNumber`, `eth_getLogs`, `eth_getBlockByNumber`) to the public Base Sepolia endpoint, and only when the user opens the live-test panel. (The installable-app service worker only caches the app's own files. The demo has one outbound link, to GNU Taler's public demo; nothing is sent with it.) | `src/lib/readmeClaims.test.ts` → "app source makes no network calls except the one read-only RPC gateway", "the gateway only allows read-only RPC methods and no signing or keys exist in app source" |
+| 1 | The browser practice screens keep their data in the browser's `localStorage` (key `agorapay-pilot-v1`). If that key is empty and the previous key `agoratap-demo-v1` still has a record, the app copies it once and then removes the old key. Its source contains no `fetch`, XHR, WebSocket or web3-library call, except ONE file, `src/lib/liveFetch.ts`, which sends read-only JSON-RPC POSTs (`eth_blockNumber`, `eth_getLogs`, `eth_getBlockByNumber`) to the public Base Sepolia endpoint, and only when the user opens the live-test panel. (The installable-app service worker only caches the app's own files. The app has one outbound link, to GNU Taler's public demo; nothing is sent with it.) | `src/lib/readmeClaims.test.ts` → "app source makes no network calls except the one read-only RPC gateway", "the gateway only allows read-only RPC methods and no signing or keys exist in app source" |
 | 2 | `src/lib/chainRequest.ts` turns a euro price into an exact EURC or USDC amount on Base (EURC is the default, no exchange rate needed). | `src/lib/chainRequest.test.ts` → "converts EUR to atomic USDC", "defaults to EURC: merchant is asked for the euro amount with no exchange rate" |
 | 3 | It gives two open requests for the same price different exact amounts (base amount plus a tag of 1 to 9999 micro-units). | "gives two customers paying the same price different exact amounts" |
 | 4 | It builds an EIP-681 payment link addressed to the merchant's own address. | "builds an EIP-681 USDC transfer URI with chain id" |
