@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChainReadError, TRANSFER_TOPIC, addressTopic, createChainReader, parseTransferLog, type FetchLike } from './chainReader'
+import { ChainReadError, SEPOLIA_RPC_FAILURE_COPY, SEPOLIA_RPC_URLS, TRANSFER_TOPIC, addressTopic, assertSepoliaFallbackList, createChainReader, createSepoliaPanelReader, parseTransferLog, type FetchLike } from './chainReader'
 import { CHAINS } from './chainRequest'
 
 const MERCHANT = '0x1111111111111111111111111111111111111111'
@@ -167,5 +167,135 @@ describe('chainReader: reading', () => {
     const f: FetchLike = async () => { n++; return { ok: false, status: 400, json: async () => ({}) } }
     await expect(reader(f).headBlock()).rejects.toMatchObject({ code: 'http-error' })
     expect(n).toBe(1)
+  })
+})
+
+const sepoliaReader = (f: FetchLike, extra: object = {}) => createChainReader({
+  fetchFn: f,
+  rpcUrl: SEPOLIA_RPC_URLS[0],
+  rpcUrls: SEPOLIA_RPC_URLS,
+  sleep: async () => {},
+  retries: 0,
+  ...extra,
+})
+
+describe('chainReader: Base Sepolia fallback', () => {
+  it('tries the public fallback when the primary Base Sepolia endpoint times out', async () => {
+    const seen: string[] = []
+    const f: FetchLike = async (url, init) => {
+      seen.push(url)
+      if (url === SEPOLIA_RPC_URLS[0]) {
+        await new Promise<never>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })))
+        })
+      }
+      const method = (JSON.parse(init.body) as { method: string }).method
+      if (method !== 'eth_blockNumber') throw new Error(method)
+      return { ok: true, status: 200, json: async () => ({ result: '0x10' }) }
+    }
+    const head = await sepoliaReader(f, { timeoutMs: 30 }).headBlock()
+    expect(head.head).toBe(16)
+    expect(seen[0]).toBe('https://sepolia.base.org')
+    expect(seen).toContain('https://base-sepolia-rpc.publicnode.com')
+    expect(seen.some((url) => url.includes('mainnet'))).toBe(false)
+  })
+
+  it('retries HTTP 429 on the primary before the fallback', async () => {
+    const seen: string[] = []
+    const pauses: number[] = []
+    let primary = 0
+    const f: FetchLike = async (url) => {
+      seen.push(url)
+      if (url === SEPOLIA_RPC_URLS[0]) {
+        primary++
+        return { ok: false, status: 429, json: async () => ({}) }
+      }
+      return { ok: true, status: 200, json: async () => ({ result: '0x2a' }) }
+    }
+    const head = await sepoliaReader(f, { retries: 1, sleep: async (ms: number) => { pauses.push(ms) } }).headBlock()
+    expect(head).toEqual({ head: 42, rpcCalls: 3 })
+    expect(primary).toBe(2)
+    expect(pauses).toEqual([500])
+    expect(seen.at(-1)).toBe(SEPOLIA_RPC_URLS[1])
+  })
+
+  it('does not switch endpoints on a JSON-RPC error', async () => {
+    const seen: string[] = []
+    const f: FetchLike = async (url) => {
+      seen.push(url)
+      return { ok: true, status: 200, json: async () => ({ error: { code: -32000, message: 'boom' } }) }
+    }
+    await expect(sepoliaReader(f).headBlock()).rejects.toMatchObject({ code: 'rpc-error' })
+    expect(seen).toEqual([SEPOLIA_RPC_URLS[0]])
+  })
+
+  it('says every public endpoint failed and does not call a third host', async () => {
+    const seen: string[] = []
+    const f: FetchLike = async (url) => {
+      seen.push(url)
+      throw new Error('network down')
+    }
+    await expect(sepoliaReader(f).headBlock()).rejects.toThrow(SEPOLIA_RPC_FAILURE_COPY)
+    expect(seen).toEqual([...SEPOLIA_RPC_URLS])
+    expect(seen.some((url) => url.includes('mainnet'))).toBe(false)
+  })
+
+  it('refuses a mainnet URL in the Sepolia fallback list before any call', () => {
+    const seen: string[] = []
+    const f: FetchLike = async (url) => { seen.push(url); throw new Error('should not be called') }
+    expect(() => createChainReader({
+      fetchFn: f,
+      rpcUrl: SEPOLIA_RPC_URLS[0],
+      rpcUrls: [SEPOLIA_RPC_URLS[0], 'https://mainnet.base.org'],
+      sleep: async () => {},
+    })).toThrow(/Mainnet is disabled/)
+    expect(seen).toEqual([])
+    expect(() => assertSepoliaFallbackList(['https://sepolia.base.org', 'https://example.com/rpc?api-key=secret'])).toThrow(/keyless/)
+    expect(() => assertSepoliaFallbackList(['https://base-sepolia-rpc.publicnode.com', 'https://sepolia.base.org'])).toThrow(/Primary RPC/)
+  })
+
+  it('panel reader confirms chain id 84532 and refuses a mainnet chain id', async () => {
+    const methods: string[] = []
+    const urls: string[] = []
+    const ok: FetchLike = async (url, init) => {
+      urls.push(url)
+      const method = (JSON.parse(init.body) as { method: string }).method
+      methods.push(method)
+      if (method === 'eth_chainId') return { ok: true, status: 200, json: async () => ({ result: '0x14a34' }) }
+      if (method === 'eth_blockNumber') return { ok: true, status: 200, json: async () => ({ result: '0x10' }) }
+      throw new Error(method)
+    }
+    const panel = createSepoliaPanelReader(ok, { timeoutMs: 0, sleep: async () => {}, retries: 0 })
+    expect((await panel.headBlock()).head).toBe(16)
+    expect(methods[0]).toBe('eth_chainId')
+    expect(urls.every((url) => url === 'https://sepolia.base.org')).toBe(true)
+
+    const mainnetFirst: FetchLike = async (url, init) => {
+      urls.push(url)
+      const method = (JSON.parse(init.body) as { method: string }).method
+      methods.push(method)
+      if (method === 'eth_chainId') {
+        const id = url === SEPOLIA_RPC_URLS[0] ? '0x2105' : '0x14a34'
+        return { ok: true, status: 200, json: async () => ({ result: id }) }
+      }
+      if (method === 'eth_blockNumber') return { ok: true, status: 200, json: async () => ({ result: '0x11' }) }
+      throw new Error(method)
+    }
+    urls.length = 0
+    methods.length = 0
+    const switched = await createSepoliaPanelReader(mainnetFirst, { timeoutMs: 0, sleep: async () => {}, retries: 0 }).headBlock()
+    expect(switched.head).toBe(17)
+    expect(methods.filter((method) => method === 'eth_blockNumber')).toEqual(['eth_blockNumber'])
+    expect(urls.filter((url) => url === SEPOLIA_RPC_URLS[0]).length).toBe(1)
+
+    const bothMainnet: FetchLike = async (_url, init) => {
+      const method = (JSON.parse(init.body) as { method: string }).method
+      methods.push(method)
+      if (method === 'eth_chainId') return { ok: true, status: 200, json: async () => ({ result: '0x2105' }) }
+      throw new Error(`should not send ${method}`)
+    }
+    methods.length = 0
+    await expect(createSepoliaPanelReader(bothMainnet, { timeoutMs: 0, sleep: async () => {}, retries: 0 }).headBlock()).rejects.toThrow(/Mainnet is disabled/)
+    expect(methods).toEqual(['eth_chainId', 'eth_chainId'])
   })
 })

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { AlertTriangle, Radio } from 'lucide-react'
-import { createChainReader, PUBLIC_RPC, type ChainReader } from './lib/chainReader'
+import { createSepoliaPanelReader, type ChainReader } from './lib/chainReader'
 import { browserFetch } from './lib/liveFetch'
 import { bindLiveClaim, describeState, HISTORY_LOOKBACK_BLOCKS, openLiveRequest, refreshLive, type LiveRequest } from './lib/liveSession'
 import { type PaymentState } from './lib/confirmation'
@@ -29,9 +29,9 @@ const CHAIN = 'baseSepolia' as const
 export const POLL_MS = 6000
 // Sepolia's public endpoint (2026-10-06) rejects eth_getLogs when toBlock - fromBlock is over 500.
 // maxRange 501 asks for a 500-block span. A 24 h history is about 87 calls; 120 leaves room for a few retries.
-const defaultReader = (): ChainReader => createChainReader({ fetchFn: browserFetch, rpcUrl: PUBLIC_RPC[CHAIN], maxRange: 501, maxCalls: 120 })
+const defaultReader = (): ChainReader => createSepoliaPanelReader(browserFetch)
 
-const TESTNET_NOTE = 'Base Sepolia test network only. Test tokens have no value. Read-only: this page never signs, sends or holds anything. Reads go to the public endpoint sepolia.base.org, which sees your IP address.'
+const TESTNET_NOTE = 'Base Sepolia test network only. Test tokens have no value. Read-only: this page never signs, sends or holds anything. Reads try sepolia.base.org first, then one public fallback if that endpoint fails. Each endpoint sees your IP address. Mainnet is not contacted. If every endpoint fails, this page says it could not read Base Sepolia and stops.'
 
 function usePolling(run: () => Promise<void>, active: boolean) {
   const busy = useRef(false)

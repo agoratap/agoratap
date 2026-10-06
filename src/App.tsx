@@ -61,7 +61,7 @@ const downloadFile = (content: string, type: string, filename: string) => {
 }
 const when = (date: string) => new Intl.DateTimeFormat('en-IE', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(new Date(date))
 
-function DemoLabel() { return <span className="demo-label"><span />DEMO · SIMULATED</span> }
+function DemoLabel() { return <span className="demo-label"><span />EARLY PILOT · PRACTICE</span> }
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
@@ -177,7 +177,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
       <h3>Why this is not a Visa crypto card</h3>
       <p>Crypto cards still authorize through a card network. The network and often the merchant acquirer can build a buyer transaction graph. Agora Pay’s design target is no card-network authorization, no merchant-side buyer profiling, and one-time credentials that do not link purchases together.</p>
     </div>
-    <p className="fine-print">Design target, not a current legal guarantee. This prototype does not implement GNU Taler cryptography, screening, custody, or anonymity. Production requires counsel and licensed CASP/EMI partners.</p>
+    <p className="fine-print">Design target, not a current legal guarantee. This early pilot does not implement GNU Taler cryptography, custody, or anonymity. The merchant address check is a snapshot warning only. Production requires counsel and licensed partners.</p>
   </FlowLayout>
 
   if (step === 'receipt' && lastReceipt) return <FlowLayout title="Payment complete" onBack={() => setStep('wallet')} progress={100}>
@@ -194,7 +194,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
     <div className={`tap-zone ${paying ? 'paying' : ''}`}>
       <div className="tap-rings"><span /><span /><button onClick={pay} disabled={paying} aria-label="Simulate NFC tap"><Wifi size={42} /></button></div>
       <h2>{paying ? 'Exchanging payment proof…' : 'Hold near the merchant device'}</h2>
-      <p>{paying ? 'This stays on-device in the demo.' : 'Or tap the signal to simulate NFC.'}</p>
+      <p>{paying ? 'This stays on this device. Nothing is sent.' : 'Or tap the signal to simulate NFC.'}</p>
     </div>
     <div className="pay-summary"><div><span>Corner Market</span><strong>{money(request.amount)}</strong></div><div><span>Paying from</span><strong>{asset} · {quote.totalSourceAmount.toFixed(2)}</strong></div></div>
     <div className="demo-note"><Radio size={16} /> No NFC hardware is accessed. This interaction is simulated.</div>
@@ -210,15 +210,15 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
       <div><span>Payment network fee</span><strong>0.00 {asset}</strong></div>
       <div className="quote-total"><span>Total</span><strong>{quote.totalSourceAmount.toFixed(2)} {asset}</strong></div>
     </div>
-    <p className="rate-note"><Info size={14} /> Simulated indicative rate. Quote is fixed only for this demo screen.</p>
+    <p className="rate-note"><Info size={14} /> Simulated indicative rate. Quote is fixed only for this practice screen.</p>
     <button className="primary full" onClick={() => setStep('tap')}>Continue to tap <ArrowRight size={18} /></button>
   </FlowLayout>
 
   return <FlowLayout title="My wallet" onBack={onBack} progress={25}>
     <div className="balance-card">
       <div className="balance-top"><span>AVAILABLE BALANCE</span><ShieldCheck size={18} /></div>
-      <h2>{money(data.balances.EURC + data.balances.USDC * 0.92)}</h2><p>Estimated across demo assets</p>
-      <button onClick={() => setData({ ...data, balances: { ...data.balances, EURC: data.balances.EURC + 25 } })}><CircleDollarSign size={16} /> Add €25 demo funds</button>
+      <h2>{money(data.balances.EURC + data.balances.USDC * 0.92)}</h2><p>Estimated across practice balances</p>
+      <button onClick={() => setData({ ...data, balances: { ...data.balances, EURC: data.balances.EURC + 25 } })}><CircleDollarSign size={16} /> Add €25 practice funds</button>
     </div>
     <div className="section-row"><h3>Choose how to pay</h3><button onClick={() => setStep('privacy')}><LockKeyhole size={14} /> Privacy</button></div>
     <div className="asset-list">
@@ -250,14 +250,14 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
   const download = () => downloadFile(receiptsToCsv(data.receipts), 'text/csv', 'agora-pay-receipts.csv')
 
   if (step === 'receipts') return <FlowLayout title="Daily receipts" onBack={() => setStep('amount')} progress={100}>
-    <div className="audit-head"><div><span>TODAY · DEMO</span><h2>{money(data.receipts.reduce((sum, receipt) => sum + receipt.amount, 0))}</h2><p>{data.receipts.length} completed payments</p></div><button className="secondary compact" onClick={download}><Download size={16} /> Export CSV</button></div>
+    <div className="audit-head"><div><span>TODAY · PRACTICE</span><h2>{money(data.receipts.reduce((sum, receipt) => sum + receipt.amount, 0))}</h2><p>{data.receipts.length} completed payments</p></div><button className="secondary compact" onClick={download}><Download size={16} /> Export CSV</button></div>
     <div className="receipt-list">{data.receipts.map((receipt) => <article key={receipt.id}><span className="receipt-status"><Check /></span><div><strong>{money(receipt.amount)}</strong><small>{when(receipt.createdAt)} · {receipt.asset}</small></div><div className="settle-label">{receipt.settlement === 'SEPA_INSTANT' ? 'SEPA SIM' : 'EUR STABLE'}</div></article>)}</div>
     <div className="audit-note"><ShieldCheck size={18} /><div><strong>Merchant remains auditable</strong><p>This trail is about the identified merchant and settlement, not the buyer’s identity. Exports are marked DEMO. Production would add signed references and retention controls.</p></div></div>
   </FlowLayout>
 
   if (step === 'complete' && request) return <FlowLayout title="Payment received" onBack={() => setStep('amount')} progress={100}>
     <div className="success-orbit merchant-success"><div><Check size={36} /></div></div>
-    <div className="receipt-head"><span>RECEIVED · DEMO</span><h2>{money(request.amount)}</h2><p>Payment proof accepted</p></div>
+    <div className="receipt-head"><span>RECEIVED · PRACTICE</span><h2>{money(request.amount)}</h2><p>Payment proof accepted</p></div>
     <div className="settlement-track"><span className="done"><Check /></span><i /><span className="done"><Check /></span><div><small>PAYMENT</small><strong>Confirmed</strong></div><div><small>SETTLEMENT</small><strong>{request.settlement === 'SEPA_INSTANT' ? 'SEPA simulated' : 'EUR stablecoin'}</strong></div></div>
     <button className="primary full" onClick={() => { setAmount(''); setStep('amount') }}>New sale</button>
     <button className="text-link center" onClick={() => setStep('receipts')}><History size={16} /> View daily receipts</button>
@@ -276,12 +276,12 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
     <div className="quick-amounts">{['4.50', '8.00', '12.50', '20.00'].map((v) => <button key={v} onClick={() => setAmount(v)}>€{v}</button>)}</div>
     <div className="settlement-title"><span>SETTLE TO</span><small>You can change this for every sale</small></div>
     <div className="settlement-options">
-      <button className={settlement === 'EUR_STABLECOIN' ? 'selected' : ''} onClick={() => setSettlement('EUR_STABLECOIN')}><span className="settlement-icon"><CircleDollarSign /></span><div><strong>EUR stablecoin</strong><small>Instant · demo wallet</small></div><span className="radio-dot" /></button>
+      <button className={settlement === 'EUR_STABLECOIN' ? 'selected' : ''} onClick={() => setSettlement('EUR_STABLECOIN')}><span className="settlement-icon"><CircleDollarSign /></span><div><strong>EUR stablecoin</strong><small>Instant · practice balance</small></div><span className="radio-dot" /></button>
       <button className={settlement === 'SEPA_INSTANT' ? 'selected' : ''} onClick={() => setSettlement('SEPA_INSTANT')}><span className="settlement-icon"><Landmark /></span><div><strong>SEPA Instant</strong><small>Simulated fiat settlement</small></div><span className="radio-dot" /></button>
     </div>
     <AddressCheck value={checkedAddress} onChange={setCheckedAddress} />
     <MerchantLive />
-    <div className="fee-line"><span>Demo processing fee</span><strong>€0.00</strong></div>
+    <div className="fee-line"><span>Practice screen fee</span><strong>€0.00</strong></div>
     <button className="primary full" onClick={makeRequest} disabled={!Number(amount)}>Create payment request <ArrowRight size={18} /></button>
   </FlowLayout>
 }
@@ -354,11 +354,11 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
   }
 
   return <FlowLayout title="Merchant pilot" onBack={onBack} progress={100} wide>
-    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Test the checkout.<br />Do not pretend it is live.</h2><p>This screen creates a fictional merchant session in this browser. It makes no network request and does not create, inspect or pay a GNU Taler order.</p></div>
+    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Practice the checkout.<br />Early pilot — no live funds.</h2><p>This screen creates a practice merchant session in this browser. It makes no network request and does not create, inspect or pay a GNU Taler order.</p></div>
     <div className="protocol-grid">
       <section className="protocol-form">
         {!session ? <>
-          <label><span>FICTIONAL EUR AMOUNT</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+          <label><span>PRACTICE EUR AMOUNT</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
           <label><span>SCENARIO LABEL — NO CUSTOMER DETAILS</span><input value={scenario} maxLength={80} onChange={(event) => setScenario(event.target.value)} /></label>
           <button className="primary full" onClick={startSession}>Start local test session <ArrowRight size={18} /></button>
         </> : <>
@@ -371,10 +371,10 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
         {error && <div className="protocol-error"><Info size={16} />{error}</div>}
       </section>
       <section className="protocol-result" aria-live="polite">
-        {!session && <div className="protocol-empty"><Radio size={28} /><h3>No local session yet</h3><p>Enter fictional test facts to create an immutable session card.</p></div>}
+        {!session && <div className="protocol-empty"><Radio size={28} /><h3>No local session yet</h3><p>Enter a practice amount to create a session card. No customer data.</p></div>}
         {session && <>
           <div className={`live-status ${completed ? 'paid' : ''}`}><span />{completed ? 'SCENARIO RECORDED' : 'LOCAL SIMULATION · READY'}</div>
-          <div className="live-amount"><small>FICTIONAL AMOUNT</small><strong>{money(session.amountMinor / 100)}</strong></div>
+          <div className="live-amount"><small>PRACTICE AMOUNT</small><strong>{money(session.amountMinor / 100)}</strong></div>
           <dl><div><dt>Scenario</dt><dd>{session.scenario}</dd></div><div><dt>Session ID</dt><dd>{session.id}</dd></div><div><dt>Started</dt><dd>{when(session.startedAt)}</dd></div><div><dt>Environment</dt><dd>LOCAL SIMULATION</dd></div></dl>
           {!completed && <button className="primary full" onClick={() => setCompletedAt(new Date().toISOString())}>Record scenario complete <Check size={18} /></button>}
           <fieldset className="friction-set">
@@ -399,14 +399,14 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
 
 function Architecture({ onBack }: { onBack: () => void }) {
   return <FlowLayout title="System map" onBack={onBack} progress={100} wide>
-    <div className="architecture-intro"><span className="section-kicker">PRODUCTION DIRECTION</span><h2>Unlinkable at the till.<br />Identified at the merchant.</h2><p>Core differentiator: no routine buyer KYC or identity collection within lawful low-risk thresholds. The merchant is KYB-identified and auditable. This is a design target requiring counsel and licensed partners, not a guarantee of this demo.</p></div>
+    <div className="architecture-intro"><span className="section-kicker">PRODUCTION DIRECTION</span><h2>Unlinkable at the till.<br />Identified at the merchant.</h2><p>Core differentiator: no routine buyer KYC or identity collection within lawful low-risk thresholds. The merchant is KYB-identified and auditable. This is a design target requiring counsel and licensed partners, not a guarantee of this early pilot.</p></div>
     <div className="system-map">
       <article><span>01</span><WalletCards /><h3>Buyer wallet</h3><p>Holds unlinkable payment tokens. No reusable shopper ID at checkout.</p><small>BUYER DEVICE</small></article><i>→</i>
       <article className="core"><span>02</span><Radio /><h3>Licensed issuer / GNU Taler exchange</h3><p>Validates one-time value without building a buyer transaction graph. Agora Pay integrates; it does not operate this regulated layer.</p><small>OPEN PROTOCOL · PARTNER LAYER</small></article><i>→</i>
       <article><span>03</span><Store /><h3>Merchant till</h3><p>Identified merchant receives proof and settlement, not a shopper profile.</p><small>MERCHANT DEVICE</small></article>
     </div>
     <div className="rail-map"><div><Building2 /><span><small>REGULATED EDGE</small><strong>Licensed CASP / EMI</strong></span></div><div><Landmark /><span><small>FIAT SETTLEMENT</small><strong>SEPA Instant partner</strong></span></div></div>
-    <div className="boundary-grid"><article><h3>What changes</h3><p>No card-network authorization. No merchant-side buyer profiling. Unlinkable credentials instead of a crypto card.</p></article><article><h3>What remains</h3><p>Merchant KYB, sanctions/AML at lawful boundaries, licensed rails. Privacy is not sanctions evasion.</p></article><article><h3>What this demo proves</h3><p>Interaction, quote clarity, settlement choice and merchant audit export—not production cryptography or legal anonymity.</p></article></div>
+    <div className="boundary-grid"><article><h3>What changes</h3><p>No card-network authorization. No merchant-side buyer profiling. Unlinkable credentials instead of a crypto card.</p></article><article><h3>What remains</h3><p>Merchant KYB, sanctions/AML at lawful boundaries, licensed rails. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Interaction, quote clarity, settlement choice and merchant audit export—not production cryptography or legal anonymity.</p></article></div>
   </FlowLayout>
 }
 

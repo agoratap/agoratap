@@ -47,13 +47,13 @@ A plain `transfer(address,uint256)` still cannot carry a memo, and a wallet that
 
 Example merchant address on file for a later pilot, not a default and not enabled on mainnet: `0xCc15552e20ed43c47a1EEBf781c905Cd1117CEa3`.
 
-Sepolia demo, test funds only:
+Sepolia pilot, test funds only:
 
 1. Merchant screen, live test: enter a Base Sepolia address you control and a price, then create the request.
 2. Paste the share link (the one ending in `#ref=`) into the buyer screen. Open in wallet. The wallet asks for a normal EURC transfer on Base Sepolia (chain id 84532) for the exact amount shown. Confirm there, with test tokens.
 3. Copy the transaction hash from the wallet.
 4. Paste it into either panel and choose "Match this transaction".
-5. The line moves from unpaid (or ambiguous, if another transfer of that amount exists) to pending, then to confirmed after 12 blocks. The panel polls about every 6 seconds. A bound hash is read with one `eth_getTransactionReceipt` (the Transfer logs in that receipt). It only reads `sepolia.base.org`.
+5. The line moves from unpaid (or ambiguous, if another transfer of that amount exists) to pending, then to confirmed after 12 blocks. The panel polls about every 6 seconds. A bound hash is read with one `eth_getTransactionReceipt` (the Transfer logs in that receipt). The panel tries `https://sepolia.base.org` first. If that endpoint times out, drops the connection, or keeps answering HTTP 429 or 5xx after one retry, the same read is tried on `https://base-sepolia-rpc.publicnode.com`. Neither URL has an API key. Each one sees the browser's IP address. A hung attempt is abandoned after 8 seconds. If both fail, the panel shows: "Could not read Base Sepolia. The public endpoint sepolia.base.org failed, and the fallback endpoint failed too. Mainnet was not contacted. Nothing was signed or sent. Try again in a moment." A JSON-RPC error from a live node (for example a log range that is too wide) stays on that node and is not treated as an outage. Before using an endpoint, the panel reads `eth_chainId` and continues only for 84532. Chain id 8453 is refused. `https://mainnet.base.org` is not in the list, and putting it there throws before any call. The hand-run harness in section 6 does not use the fallback: it still talks only to `https://sepolia.base.org`.
 6. Export the sale backup before leaving the page. If the sale is gone, import that file, open **Missed payment?**, and paste the same link and hash. Without the saved window the page will not decide the payment.
 
 ## 6. Sepolia harness run on 2026-10-06
