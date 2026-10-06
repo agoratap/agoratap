@@ -2,13 +2,13 @@
 
 ## Prototype status
 
-AgoraTap is a local, simulated prototype. Do not use it with real funds, private keys, seed phrases, identity documents, production credentials, personal data, or real merchant records. There is no backend, authorization service, blockchain integration, encryption-at-rest layer, or regulated payment provider.
+Agora Pay is an early pilot with local practice screens. Do not use it with real funds, private keys, seed phrases, identity documents, production credentials, personal data, or real merchant records. There is no backend, authorization service, blockchain integration, encryption-at-rest layer, or regulated payment provider.
 
 The product *aims* at unlinkable buyer credentials and no routine buyer KYC in-threshold. This codebase does not implement that security property.
 
 ## Data handling
 
-Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. The Merchant pilot session report (JSON/CSV) is likewise generated locally, unsigned, DEMO-labelled, and not legal or regulatory evidence. Friction capture is closed-choice tags plus client-side step timing only — no free text, no customer or personal data. Reset clears the AgoraTap storage key; browser/download history and downloaded files are outside the app's control.
+Demo balances, payment requests, and receipts are stored as readable JSON in browser `localStorage`. Any script running on the same origin could read or change them. The CSV export is a merchant settlement trail generated locally and is not signed. The Merchant pilot session report (JSON/CSV) is likewise generated locally, unsigned, DEMO-labelled, and not legal or regulatory evidence. Friction capture is closed-choice tags plus client-side step timing only — no free text, no customer or personal data. Reset clears the Agora Pay storage key (`agorapay-pilot-v1`) and the previous key (`agoratap-demo-v1`) if it is still present; browser/download history and downloaded files are outside the app's control.
 
 ## Threat model (production target)
 

@@ -11,6 +11,7 @@ export interface PilotCompletion {
 
 export interface PilotSessionReport {
   readonly label: typeof PILOT_REPORT_DEMO_LABEL
+  /** Stable export id. Left as `agoratap-merchant-pilot-session` so existing report files keep the same type. */
   readonly reportType: 'agoratap-merchant-pilot-session'
   readonly schemaVersion: 2
   readonly generatedAt: string

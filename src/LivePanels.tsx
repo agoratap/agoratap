@@ -117,19 +117,19 @@ export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; 
   return <section className="address-check" aria-label="Live testnet payment link">
     <label className="amount-entry"><span>LIVE TEST (BASE SEPOLIA, READ-ONLY) · PASTE A PAYMENT LINK</span>
       <input value={text} onChange={(e) => { setText(e.target.value); setLive(null); setWatching(false); setState(null) }} placeholder="ethereum:0x…@84532/transfer?address=0x…&uint256=…" spellCheck={false} autoComplete="off" aria-label="Payment link" /></label>
-    {text && !parsed && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>{parseError || 'Not an AgoraTap payment link.'}</p></div>}
+    {text && !parsed && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>{parseError || 'Not an Agora Pay payment link.'}</p></div>}
     {parsed && <div className="request-details" aria-label="What this link asks">
       <div><span>Send exactly</span><strong>{formatUsdc(parsed.atomic)} {parsed.token}</strong></div>
       <div><span>To</span><strong style={{ wordBreak: 'break-all' }}>{parsed.merchant}</strong></div>
       <div><span>Network</span><strong>{parsed.chain === 'baseSepolia' ? 'Base Sepolia (test)' : 'Base MAINNET (real funds)'}</strong></div>
     </div>}
-    {testnetOnly && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>This link is for Base mainnet (real funds). This stage of AgoraTap only works with the Base Sepolia test network. Do not pay it from here.</p></div>}
+    {testnetOnly && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>This link is for Base mainnet (real funds). This stage of Agora Pay only works with the Base Sepolia test network. Do not pay it from here.</p></div>}
     {screen && (screen.status === 'listed' || screen.status === 'list-not-loaded') && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>{screen.message}</p></div>}
     {parsed && !testnetOnly && <>
       <a className="secondary full" href={text.trim()}>Open in my wallet (I confirm there)</a>
       <button className="secondary full" onClick={watch}>Watch the chain for this payment</button>
     </>}
     {(watching || error) && <StateLine state={state} error={error} />}
-    <small className="address-check-note">{TESTNET_NOTE} Your wallet, not AgoraTap, signs and sends. Watching includes the prior 24 hours so a payment made just before opening this screen is not missed.</small>
+    <small className="address-check-note">{TESTNET_NOTE} Your wallet, not Agora Pay, signs and sends. Watching includes the prior 24 hours so a payment made just before opening this screen is not missed.</small>
   </section>
 }

@@ -90,7 +90,7 @@ export function matchRequest(req: OpenRequest, logs: readonly TransferLog[]): Ma
 
 /**
  * Asset-neutral offer: the merchant lists every asset it is happy to receive; the buyer pays in whichever one
- * they already hold. No conversion happens in AgoraTap. If the merchant wants something else (another coin or
+ * they already hold. No conversion happens in Agora Pay. If the merchant wants something else (another coin or
  * fiat), the merchant converts on its own side, through its own provider.
  */
 export interface Quote {

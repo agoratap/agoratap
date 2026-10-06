@@ -14,6 +14,7 @@ import { AddressCheck } from './AddressCheck'
 import { BuyerLive, MerchantLive } from './LivePanels'
 import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
+import { LEGACY_STORAGE_KEY, STORAGE_KEY, resolveStoredRecord } from './lib/storage'
 
 type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
@@ -25,7 +26,6 @@ interface DemoState {
   request: PaymentRequest | null
 }
 
-const STORAGE_KEY = 'agoratap-demo-v1'
 const seedState: DemoState = {
   balances: { EURC: 84.2, USDC: 126.75 },
   request: null,
@@ -38,8 +38,17 @@ const seedState: DemoState = {
 
 function loadState(): DemoState {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) as DemoState : seedState
+    const { raw, copyLegacy } = resolveStoredRecord(
+      localStorage.getItem(STORAGE_KEY),
+      localStorage.getItem(LEGACY_STORAGE_KEY),
+    )
+    if (raw === null) return seedState
+    const parsed = JSON.parse(raw) as DemoState
+    if (copyLegacy) {
+      localStorage.setItem(STORAGE_KEY, raw)
+      localStorage.removeItem(LEGACY_STORAGE_KEY)
+    }
+    return parsed
   } catch { return seedState }
 }
 
@@ -57,17 +66,22 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [data, setDataRaw] = useState<DemoState>(loadState)
   const setData = (next: DemoState) => { setDataRaw(next); localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) }
-  const reset = () => { localStorage.removeItem(STORAGE_KEY); setDataRaw(seedState); setScreen('home') }
+  const reset = () => {
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
+    setDataRaw(seedState)
+    setScreen('home')
+  }
 
   return (
     <div className="app-shell">
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <header className="topbar">
-        <button className="brand" onClick={() => setScreen('home')} aria-label="AgoraTap home">
+        <button className="brand" onClick={() => setScreen('home')} aria-label="Agora Pay home">
           <span className="brand-mark"><Leaf size={18} strokeWidth={2.5} /></span>
-          <span>agora<span>tap</span></span>
+          <span>agora <span>pay</span></span>
         </button>
-        <div className="top-actions"><DemoLabel /><button className="icon-button" onClick={reset} title="Reset demo"><RefreshCcw size={17} /></button></div>
+        <div className="top-actions">{screen === 'home' ? <span className="demo-label"><span />EARLY PILOT</span> : <DemoLabel />}<button className="icon-button" onClick={reset} title="Reset local practice data"><RefreshCcw size={17} /></button></div>
       </header>
 
       <main>
@@ -77,7 +91,9 @@ function App() {
         {screen === 'pilot' && <MerchantPilot onBack={() => setScreen('home')} />}
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
-      <footer className="legal-footer">Prototype only · No real funds · No blockchain transactions · Not a regulated payment service</footer>
+      <footer className="legal-footer">{screen === 'home'
+        ? 'Early pilot — non-custodial. You pay from your wallet to the merchant’s address. Not a regulated payment service.'
+        : 'Practice screens use simulated balances. Live checks are Base Sepolia only. Not a regulated payment service.'}</footer>
     </div>
   )
 }
@@ -85,41 +101,41 @@ function App() {
 function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   return <div className="home-page">
     <section className="hero">
-      <div className="eyebrow"><ShieldCheck size={15} /> PRIVATE BY DESIGN · OPEN PAYMENT RAILS</div>
-      <h1>Tap. Pay.<br /><em>Keep it yours.</em></h1>
-      <p className="hero-copy">A working concept for payments without card-network authorization: unlinkable shopper credentials, no routine buyer identity collection within lawful low-risk thresholds, and an identified, auditable merchant.</p>
+      <div className="eyebrow"><ShieldCheck size={15} /> EARLY PILOT · NON-CUSTODIAL</div>
+      <h1>Pay from your wallet.<br /><em>Straight to the merchant.</em></h1>
+      <p className="hero-copy">Early pilot — non-custodial. You pay from your wallet to the merchant’s address. Agora Pay does not hold keys or funds, and it does not take a fee on the payment.</p>
       <div className="privacy-promise"><Fingerprint size={17} /><span><strong>No routine buyer KYC is the design target.</strong> Not a current legal guarantee; production thresholds and controls require counsel and licensed partners.</span></div>
       <div className="hero-actions">
-        <button className="primary" onClick={() => onNavigate('pilot')}>Run local merchant pilot <FlaskConical size={18} /></button>
-        <button className="secondary" onClick={() => onNavigate('merchant')}>Open local merchant demo</button>
+        <button className="primary" onClick={() => onNavigate('pilot')}>Start a merchant pilot session <FlaskConical size={18} /></button>
+        <button className="secondary" onClick={() => onNavigate('merchant')}>Open the merchant screen</button>
       </div>
-      <div className="honesty"><Info size={16} /><span><strong>Honest demo.</strong> Every balance, conversion and settlement is simulated locally on this device.</span></div>
+      <div className="honesty"><Info size={16} /><span><strong>What is live today.</strong> The till and wallet screens are practice flows with simulated balances on this device. Chain checks run on Base Sepolia only, with test tokens. Mainnet payments are not enabled.</span></div>
     </section>
 
     <section className="role-panel">
       <button className="role-card buyer-card" onClick={() => onNavigate('buyer')}>
         <span className="role-number">01</span><WalletCards size={26} />
-        <div><span className="role-label">FOR PEOPLE</span><h2>Pay without handing over your identity.</h2><p>Unlinkable tokens. No routine buyer KYC inside lawful low-risk thresholds.</p></div>
+        <div><span className="role-label">FOR PEOPLE</span><h2>Pay the merchant from your wallet.</h2><p>Non-custodial. Unlinkable credentials remain a design target, not something this pilot already delivers.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
       <button className="role-card merchant-card" onClick={() => onNavigate('merchant')}>
         <span className="role-number">02</span><Store size={26} />
-        <div><span className="role-label">FOR MERCHANTS</span><h2>You stay identified. Shoppers do not.</h2><p>KYB, audit trail, EUR stablecoin or simulated SEPA Instant.</p></div>
+        <div><span className="role-label">FOR MERCHANTS</span><h2>You receive at your own address.</h2><p>Agora Pay does not hold the payment. The merchant stays identified and auditable.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
     </section>
 
     <section className="pilot-offer">
-      <div><span className="section-kicker">FIRST BUSINESS WEDGE</span><h2>One merchant. One local test session. Fictional value only.</h2></div>
-      <div><p>Run a structured checkout usability session entirely in this browser. No order is sent to GNU Taler or any other service; no money, customer data, credentials, custody or production payment is involved.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=AgoraTap%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
+      <div><span className="section-kicker">MERCHANT PILOT</span><h2>One checkout. One browser session. No custody.</h2></div>
+      <div><p>Walk a merchant through the till in this browser. No order is sent to GNU Taler or any other service. No customer data, credentials, or funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
-      <div><span className="section-kicker">THE PROPOSITION</span><h2>Cash-like privacy.<br />Digital convenience.</h2></div>
+      <div><span className="section-kicker">HOW A PAYMENT MOVES</span><h2>Wallet to address.<br />Agora Pay stays out.</h2></div>
       <div className="steps">
-        <article><span>1</span><div><h3>Load</h3><p>Buyer funds unlinkable payment tokens. Inside lawful low-risk thresholds, no routine identity collection is the design target.</p></div></article>
-        <article><span>2</span><div><h3>Tap</h3><p>A one-time credential pays. Merchant sees amount and proof, not a reusable shopper identity or card profile.</p></div></article>
-        <article><span>3</span><div><h3>Settle</h3><p>Merchant remains KYB-identified and auditable. They choose EUR stablecoin or SEPA Instant via licensed partners.</p></div></article>
+        <article><span>1</span><div><h3>Address</h3><p>The merchant names an address they already control. Agora Pay does not create or hold that address.</p></div></article>
+        <article><span>2</span><div><h3>Pay</h3><p>The buyer sends from their own wallet to that address. Agora Pay is not in the path of the funds.</p></div></article>
+        <article><span>3</span><div><h3>Check</h3><p>A read-only look at Base Sepolia can show whether a matching test transfer arrived. Mainnet stays off.</p></div></article>
       </div>
       <button className="text-link" onClick={() => onNavigate('architecture')}>See how the system fits together <ArrowRight size={16} /></button>
     </section>
@@ -157,7 +173,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
     </div>
     <div className="visa-contrast">
       <h3>Why this is not a Visa crypto card</h3>
-      <p>Crypto cards still authorize through a card network. The network and often the merchant acquirer can build a buyer transaction graph. AgoraTap’s design target is no card-network authorization, no merchant-side buyer profiling, and one-time credentials that do not link purchases together.</p>
+      <p>Crypto cards still authorize through a card network. The network and often the merchant acquirer can build a buyer transaction graph. Agora Pay’s design target is no card-network authorization, no merchant-side buyer profiling, and one-time credentials that do not link purchases together.</p>
     </div>
     <p className="fine-print">Design target, not a current legal guarantee. This prototype does not implement GNU Taler cryptography, screening, custody, or anonymity. Production requires counsel and licensed CASP/EMI partners.</p>
   </FlowLayout>
@@ -229,7 +245,7 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
     const receipt = completePayment(request, 'EURC')
     setData({ ...data, request: { ...request, status: 'completed' }, receipts: [receipt, ...data.receipts] }); setStep('complete')
   }
-  const download = () => downloadFile(receiptsToCsv(data.receipts), 'text/csv', 'agoratap-demo-receipts.csv')
+  const download = () => downloadFile(receiptsToCsv(data.receipts), 'text/csv', 'agora-pay-receipts.csv')
 
   if (step === 'receipts') return <FlowLayout title="Daily receipts" onBack={() => setStep('amount')} progress={100}>
     <div className="audit-head"><div><span>TODAY · DEMO</span><h2>{money(data.receipts.reduce((sum, receipt) => sum + receipt.amount, 0))}</h2><p>{data.receipts.length} completed payments</p></div><button className="secondary compact" onClick={download}><Download size={16} /> Export CSV</button></div>
@@ -318,7 +334,7 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
       const timings = [timing('pilot_session', startedAt, endedAt)]
       const friction = createFrictionCapture({ tags: frictionTags, timings })
       const report = buildPilotSessionReport(session, { completedAt }, endedAt, friction)
-      const base = `agoratap-DEMO-pilot-session-${session.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36)}`
+      const base = `agora-pay-pilot-session-${session.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36)}`
       downloadFile(pilotReportToJson(report), 'application/json', `${base}.json`)
       downloadFile(pilotReportToCsv(report), 'text/csv', `${base}.csv`)
       setError('')
@@ -347,7 +363,7 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
           <div className="sandbox-boundary"><Check size={18} /><div><strong>Session facts locked</strong><p>The amount, label, ID and start time below are an immutable snapshot. Start another session to change them.</p></div></div>
           <button className="secondary full" onClick={startAnother}>Start another session</button>
         </>}
-        <div className="sandbox-boundary"><FlaskConical size={18} /><div><strong>Boundary</strong><p>All entered values stay in component memory and are discarded on refresh. Nothing is sent to GNU Taler, AgoraTap or a merchant backend.</p></div></div>
+        <div className="sandbox-boundary"><FlaskConical size={18} /><div><strong>Boundary</strong><p>All entered values stay in component memory and are discarded on refresh. Nothing is sent to GNU Taler, Agora Pay or a merchant backend.</p></div></div>
         <a className="text-link center" href="https://demo.taler.net/" target="_blank" rel="noreferrer noopener">Visit GNU Taler’s official public demo <ArrowRight size={16} /></a>
         <p className="fine-print">The external link is fixed and sends none of the values entered above. GNU Taler operates that separate site under its own terms.</p>
         {error && <div className="protocol-error"><Info size={16} />{error}</div>}
@@ -384,7 +400,7 @@ function Architecture({ onBack }: { onBack: () => void }) {
     <div className="architecture-intro"><span className="section-kicker">PRODUCTION DIRECTION</span><h2>Unlinkable at the till.<br />Identified at the merchant.</h2><p>Core differentiator: no routine buyer KYC or identity collection within lawful low-risk thresholds. The merchant is KYB-identified and auditable. This is a design target requiring counsel and licensed partners, not a guarantee of this demo.</p></div>
     <div className="system-map">
       <article><span>01</span><WalletCards /><h3>Buyer wallet</h3><p>Holds unlinkable payment tokens. No reusable shopper ID at checkout.</p><small>BUYER DEVICE</small></article><i>→</i>
-      <article className="core"><span>02</span><Radio /><h3>Licensed issuer / GNU Taler exchange</h3><p>Validates one-time value without building a buyer transaction graph. AgoraTap integrates; it does not operate this regulated layer.</p><small>OPEN PROTOCOL · PARTNER LAYER</small></article><i>→</i>
+      <article className="core"><span>02</span><Radio /><h3>Licensed issuer / GNU Taler exchange</h3><p>Validates one-time value without building a buyer transaction graph. Agora Pay integrates; it does not operate this regulated layer.</p><small>OPEN PROTOCOL · PARTNER LAYER</small></article><i>→</i>
       <article><span>03</span><Store /><h3>Merchant till</h3><p>Identified merchant receives proof and settlement, not a shopper profile.</p><small>MERCHANT DEVICE</small></article>
     </div>
     <div className="rail-map"><div><Building2 /><span><small>REGULATED EDGE</small><strong>Licensed CASP / EMI</strong></span></div><div><Landmark /><span><small>FIAT SETTLEMENT</small><strong>SEPA Instant partner</strong></span></div></div>
