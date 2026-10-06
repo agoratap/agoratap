@@ -31,3 +31,12 @@
 .address-check-result p { margin: 0; font-size: 13px; }
 .address-check-warn { background: #fff1d6; color: #7a3b00; border: 1px solid #e0a040; }
 .address-check-note { color: #5b6b63; font-size: 12px; }
+.session-tools { display: grid; gap: 8px; margin-top: 4px; }
+.session-tools input[type="file"] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+.missed-payment { border: 1px solid var(--line); background: var(--paper); padding: 12px; }
+.missed-payment summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+.missed-payment ol { margin: 8px 0 4px; padding-left: 18px; }
+.missed-payment li { font-size: 12px; line-height: 1.45; color: #3d5148; margin: 4px 0; }
+.compact-entry { display: block; margin: 8px 0; text-align: left; }
+.compact-entry span { display: block; font: 500 9px DM Mono, monospace; letter-spacing: 1px; margin-bottom: 6px; }
+.compact-entry input { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid var(--line); background: #fff; padding: 8px; }

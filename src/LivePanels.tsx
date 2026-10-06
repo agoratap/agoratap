@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { AlertTriangle, Radio } from 'lucide-react'
 import { createChainReader, PUBLIC_RPC, type ChainReader } from './lib/chainReader'
 import { browserFetch } from './lib/liveFetch'
@@ -10,6 +10,20 @@ import { secureRandom, type Random } from './lib/tagging'
 import { screenAddress } from './lib/screening'
 import { windowFrom } from './lib/confirmation'
 import { type TxClaim } from './lib/reference'
+import {
+  DEVICE_BACKUP_NOTE,
+  MAX_SAVED_SALES,
+  beginDeviceMerchantSessionClear,
+  buildMerchantSession,
+  liveFromStored,
+  loadDeviceMerchantSession,
+  merchantSessionToJson,
+  parseMerchantSession,
+  saveDeviceMerchantSession,
+  type MerchantSessionFile,
+  type MerchantSessionStore,
+} from './lib/merchantSession'
+import { MISSED_PAYMENT_GUIDE, checkMissedPayment, type MissedPaymentReport } from './lib/missedPayment'
 
 const CHAIN = 'baseSepolia' as const
 export const POLL_MS = 6000
@@ -53,50 +67,170 @@ function requestFromParsed(parsed: ParsedRequestLink): OpenRequest {
   }
 }
 
+function downloadJson(content: string, filename: string) {
+  const blob = new Blob([content], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function claimsOf(sales: readonly LiveRequest[]): TxClaim[] {
+  const claims: TxClaim[] = []
+  for (const sale of sales) {
+    if (sale.request.reference && sale.claimedTxHash) claims.push({ reference: sale.request.reference, txHash: sale.claimedTxHash })
+  }
+  return claims
+}
+
 /** Merchant side: create a referenced EURC request on Base Sepolia and watch the chain for its transaction. */
-export function MerchantLive({ reader, random = secureRandom }: { reader?: ChainReader; random?: Random }) {
+export function MerchantLive({ reader, random = secureRandom, store }: { reader?: ChainReader; random?: Random; store?: MerchantSessionStore }) {
   const rd = useMemo(() => reader ?? defaultReader(), [reader])
   const [merchant, setMerchant] = useState('')
   const [amount, setAmount] = useState('1.00')
   const [txHash, setTxHash] = useState('')
+  const [saleLink, setSaleLink] = useState('')
+  const [missedHash, setMissedHash] = useState('')
   const [live, setLive] = useState<LiveRequest | null>(null)
-  const [claims, setClaims] = useState<TxClaim[]>([])
+  const [sales, setSales] = useState<LiveRequest[]>([])
   const [state, setState] = useState<PaymentState | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
-  const [open, setOpen] = useState<OpenRequest[]>([])
+  const [desk, setDesk] = useState<MissedPaymentReport | null>(null)
   const screen = screenAddress(merchant)
   const prev = useRef<PaymentState | undefined>(undefined)
+  const dirty = useRef(false)
+
+  const showSales = (restored: LiveRequest[], nextNotice?: string) => {
+    setSales(restored)
+    const last = restored[restored.length - 1] ?? null
+    setLive(last)
+    setState(null)
+    prev.current = undefined
+    if (last) {
+      setMerchant(last.request.merchant)
+      setAmount(formatUsdc(last.request.baseAtomic))
+      setSaleLink(last.uri)
+    }
+    if (nextNotice) setNotice(nextNotice)
+  }
+
+  const persist = async (next: LiveRequest[]) => {
+    const file = buildMerchantSession(next, new Date().toISOString())
+    if (store) await store.save(file)
+    else await saveDeviceMerchantSession(file)
+  }
+
+  useEffect(() => {
+    let cancel = false
+    void (async () => {
+      try {
+        const file = store ? await store.load() : await loadDeviceMerchantSession()
+        if (cancel || !file || dirty.current) return
+        showSales(file.sales.map(liveFromStored), 'Restored the sale saved on this device. Keys were never in that record.')
+      } catch (e) {
+        if (!cancel) setError(e instanceof Error ? e.message : 'Could not read the sale saved on this device')
+      }
+    })()
+    return () => { cancel = true }
+  }, [store])
 
   const create = async () => {
-    setError(''); setState(null); prev.current = undefined; setTxHash(''); setBusy('')
+    dirty.current = true
+    setError(''); setNotice(''); setState(null); prev.current = undefined; setTxHash(''); setBusy(''); setDesk(null)
     try {
       if (!isAddress(merchant)) throw new Error('Enter your receiving address (0x…)')
       setBusy('Reading recent transfers on Base Sepolia…')
-      const made = await openLiveRequest(rd, { orderId: 'live-' + Date.now(), chain: CHAIN, merchant, eurAmount: Number(amount), ttlSeconds: 3600 }, open, random)
-      setLive(made); setOpen([...open, made.request]); setBusy('')
+      const made = await openLiveRequest(rd, { orderId: 'live-' + Date.now(), chain: CHAIN, merchant, eurAmount: Number(amount), ttlSeconds: 3600 }, sales.map((sale) => sale.request), random)
+      const next = [...sales, made].slice(-MAX_SAVED_SALES)
+      setSales(next)
+      setLive(made)
+      setSaleLink(made.uri)
+      setBusy('')
+      try { await persist(next) } catch (e) { setNotice(e instanceof Error ? `${e.message} Export a backup file before you leave this page.` : 'Could not save the sale on this device. Export a backup file before you leave this page.') }
     } catch (e) { setBusy(''); setError(e instanceof Error ? e.message : 'Could not create the request') }
   }
   const matchTx = async () => {
     if (!live) return
-    setError('')
+    dirty.current = true
+    setError(''); setNotice(''); setDesk(null)
     try {
-      const nextLive = bindLiveClaim(live, txHash, claims)
+      const nextLive = bindLiveClaim(live, txHash, claimsOf(sales))
       const reference = nextLive.request.reference
       if (!reference || !nextLive.claimedTxHash) throw new Error('This request has no payment reference')
-      setClaims([...claims.filter((c) => c.reference.toLowerCase() !== reference.toLowerCase()), { reference, txHash: nextLive.claimedTxHash }])
+      const next = sales.map((sale) => sale.request.reference?.toLowerCase() === reference.toLowerCase() ? nextLive : sale)
       prev.current = undefined
+      setSales(next)
       setLive(nextLive)
-      const next = await refreshLive(rd, nextLive)
-      prev.current = next
-      setState(next)
+      const seen = await refreshLive(rd, nextLive)
+      prev.current = seen
+      setState(seen)
+      try { await persist(next) } catch (e) { setNotice(e instanceof Error ? `${e.message} Export a backup file before you leave this page.` : 'Could not save the sale on this device. Export a backup file before you leave this page.') }
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not match that transaction') }
+  }
+  const exportBackup = () => {
+    try {
+      if (sales.length === 0) throw new Error('Create a live test request before exporting a backup.')
+      const file = buildMerchantSession(sales, new Date().toISOString())
+      downloadJson(merchantSessionToJson(file), 'agora-pay-merchant-session.json')
+      setError('')
+      setNotice('Backup file downloaded. It has no wallet key. Keys stay in your wallet.')
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not export the backup') }
+  }
+  const onImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    dirty.current = true
+    setError(''); setDesk(null)
+    try {
+      const parsed: MerchantSessionFile = parseMerchantSession(await file.text())
+      if (store) await store.save(parsed)
+      else await saveDeviceMerchantSession(parsed)
+      showSales(parsed.sales.map(liveFromStored), 'Imported the sale backup. Keys were not in that file.')
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not import that backup') }
+  }
+  const forget = async () => {
+    dirty.current = true
+    setError(''); setDesk(null)
+    try {
+      if (store) await store.clear()
+      else beginDeviceMerchantSessionClear()
+      setSales([])
+      setLive(null)
+      setState(null)
+      prev.current = undefined
+      setNotice('Saved sales were removed from this device. A file you already downloaded is still on disk. Keys were never in this app.')
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the saved sales') }
+  }
+  const runDesk = async () => {
+    setError(''); setDesk(null)
+    try {
+      const report = await checkMissedPayment(rd, { saleLink, txHash: missedHash, sales })
+      setDesk(report)
+      if (report.outcome === 'checked') {
+        dirty.current = true
+        setSales(report.sales)
+        if (live?.request.reference?.toLowerCase() === report.reference) {
+          const updated = report.sales.find((sale) => sale.request.reference?.toLowerCase() === report.reference) ?? null
+          setLive(updated)
+          prev.current = report.state
+          setState(report.state)
+        }
+        try { await persist(report.sales) } catch (e) { setNotice(e instanceof Error ? `${e.message} Export a backup file before you leave this page.` : 'Could not save the sale on this device. Export a backup file before you leave this page.') }
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not check that transaction') }
   }
   usePolling(async () => {
     if (!live) return
     try { const next = await refreshLive(rd, live, prev.current); prev.current = next; setState(next); setError('') }
     catch (e) { setError(e instanceof Error ? e.message : 'Chain read failed') }
   }, live !== null && state?.status !== 'confirmed')
+
+  const deskBad = desk !== null && (desk.outcome !== 'checked' || desk.state.status === 'ambiguous' || desk.state.status === 'reorged' || desk.state.status === 'unknown' || (desk.state.status === 'unpaid' && desk.state.claimMissed))
 
   return <section className="address-check" aria-label="Live testnet request">
     <label className="amount-entry"><span>LIVE TEST (BASE SEPOLIA, READ-ONLY) · YOUR RECEIVING ADDRESS</span>
@@ -116,6 +250,24 @@ export function MerchantLive({ reader, random = secureRandom }: { reader?: Chain
     {live && <button className="secondary full" onClick={matchTx}>Match this transaction</button>}
     {busy && <p role="status">{busy}</p>}
     {(live || error) && <StateLine state={state} error={error} />}
+    <div className="session-tools">
+      <p className="address-check-note">{DEVICE_BACKUP_NOTE}</p>
+      <button type="button" className="secondary full" onClick={exportBackup}>Export sale backup</button>
+      <label className="secondary full" htmlFor="merchant-session-import">Import sale backup</label>
+      <input id="merchant-session-import" type="file" accept="application/json,.json" onChange={onImport} />
+      <button type="button" className="secondary full" onClick={forget}>Remove saved sales on this device</button>
+    </div>
+    <details className="missed-payment">
+      <summary>Missed payment?</summary>
+      <ol>{MISSED_PAYMENT_GUIDE.map((line) => <li key={line}>{line}</li>)}</ol>
+      <label className="compact-entry"><span>SALE LINK</span>
+        <input value={saleLink} onChange={(e) => setSaleLink(e.target.value.trim())} placeholder="ethereum:0x…@84532/transfer?…#ref=0x…" spellCheck={false} autoComplete="off" aria-label="Sale link for missed payment" /></label>
+      <label className="compact-entry"><span>TRANSACTION HASH</span>
+        <input value={missedHash} onChange={(e) => setMissedHash(e.target.value.trim())} placeholder="0x… 64 hex characters" spellCheck={false} autoComplete="off" aria-label="Missed payment transaction hash" /></label>
+      <button type="button" className="secondary full" onClick={runDesk}>Check this transaction</button>
+      {desk && <div className={deskBad ? 'address-check-result address-check-warn' : 'address-check-result'} role={deskBad ? 'alert' : 'status'}><p>{desk.message}</p></div>}
+    </details>
+    {notice && <p role="status">{notice}</p>}
     <small className="address-check-note">{TESTNET_NOTE} Primary match is the transaction hash bound to the payment reference on the share link. The amount tag (0.000001–0.009999) is only a backup when no hash is given. Anyone can send that amount: a match shows an amount arrived, not who sent it.</small>
   </section>
 }
