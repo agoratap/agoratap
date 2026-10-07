@@ -31,7 +31,7 @@ export const POLL_MS = 6000
 // maxRange 501 asks for a 500-block span. A 24 h history is about 87 calls; 120 leaves room for a few retries.
 const defaultReader = (): ChainReader => createSepoliaPanelReader(browserFetch)
 
-const TESTNET_NOTE = 'Base Sepolia test network only. Test tokens have no value. Read-only: this page never signs, sends or holds anything. Reads try sepolia.base.org first, then one public fallback if that endpoint fails. Each endpoint sees your IP address. Mainnet is not contacted. If every endpoint fails, this page says it could not read Base Sepolia and stops.'
+const TESTNET_NOTE = 'This panel is the optional Base rail already shipped, not the product. Base Sepolia test network only. Test tokens have no value. Read-only: this page never signs, sends or holds anything. Reads try sepolia.base.org first, then one public fallback if that endpoint fails. Each endpoint sees your IP address. Mainnet is not contacted. If every endpoint fails, this page says it could not read Base Sepolia and stops. You do not need to fund Base.'
 
 function usePolling(run: () => Promise<void>, active: boolean) {
   const busy = useRef(false)
@@ -332,7 +332,7 @@ export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; 
       <div><span>Network</span><strong>{parsed.chain === 'baseSepolia' ? 'Base Sepolia (test)' : 'Base MAINNET (real funds)'}</strong></div>
       {parsed.reference && <div><span>Payment reference</span><strong style={{ wordBreak: 'break-all', fontSize: 11 }}>{parsed.reference}</strong></div>}
     </div>}
-    {testnetOnly && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>This link is for Base mainnet (real funds). This stage of Agora Pay only works with the Base Sepolia test network. Do not pay it from here.</p></div>}
+    {testnetOnly && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>This link is for Base mainnet (real funds). The matcher on this page reads Base Sepolia only — one optional rail, not the product. Do not pay it from here.</p></div>}
     {screen && (screen.status === 'listed' || screen.status === 'list-not-loaded') && <div className="address-check-result address-check-warn" role="alert"><AlertTriangle size={18} /><p>{screen.message}</p></div>}
     {parsed && !testnetOnly && <>
       <a className="secondary full" href={walletTransferUri(text)}>Open in my wallet (I confirm there)</a>

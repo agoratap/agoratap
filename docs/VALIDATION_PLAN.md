@@ -1,8 +1,10 @@
 # Validation Plan
 
+> Product under test, as of 2026-10-07: **any-in → any-out**. The payer sends crypto they already hold. The merchant receives on the payout rail they prefer. Merchants are online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link on a phone, not a website checkout. The Base Sepolia matcher is one optional rail, not a Base-mainnet MVP. Do not recruit a pilot that requires anyone to fund Base. The phases below are an older usability plan. They are not the product definition.
+
 ## Objective
 
-Test whether buyers understand and value *unlinkable spend without routine KYC* (within lawful thresholds), and whether merchants accept remaining identified/auditable while shoppers are not — without presenting a prototype as a live financial service.
+Test whether buyers understand and value *unlinkable spend without routine KYC* (within lawful thresholds), and whether merchants accept remaining identified/auditable while shoppers are not — without presenting a prototype as a live financial service. Read that objective as one question inside the any-in → any-out product above, not as a Base-only checkout.
 
 ## Phase 1 — Usability prototype
 
