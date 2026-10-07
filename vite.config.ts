@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Agora Pay',
         short_name: 'Agora Pay',
-        description: 'Early pilot. Non-custodial payments from your wallet to the merchant’s address.',
+        description: 'Early pilot. Any-in → any-out: pay with crypto you hold. The merchant shows a QR or pay-link and installs nothing.',
         theme_color: '#123b2e',
         background_color: '#f3f1e8',
         display: 'standalone',

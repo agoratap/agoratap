@@ -1,14 +1,16 @@
-# Pilot onboarding — 15 minutes on Base Sepolia
+# Pilot onboarding
 
-A stranger can walk the live-test panels in one sitting. Test tokens only. Mainnet stays off. Agora Pay does not hold keys or funds. Do not send real money.
+Agora Pay is **any-in → any-out**. The payer sends crypto they already hold (bitcoin, USDT on Tron, or another asset a route supports). The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link on a phone they already carry, not a website checkout they must host.
 
-The steps below match the merchant and buyer **live test** panels and `docs/MATCHING_DESIGN.md` section 5.
+Agora Pay does not hold keys or funds. Do not send real money. Mainnet stays off. Nobody has to buy or fund Base to follow this pilot.
+
+The steps below are the **optional Base Sepolia matcher** already in this app: a share link, test tokens, read-only. That matcher is one rail, not the product. Skip it if you do not have test tokens. The steps match the merchant and buyer **live test** panels and `docs/MATCHING_DESIGN.md` section 5. A phone QR and a live swap onto the merchant’s payout rail are the product direction; this walkthrough does not do either.
 
 ## Before you start
 
-- Node.js 22 or newer. In this repository: `npm ci`, then `npm run dev`. Open the URL Vite prints.
-- A wallet you control, set to **Base Sepolia** (chain id 84532).
-- A little test ETH for gas, and test EURC. If you do not have test EURC, stop. Do not switch the wallet to Base mainnet to get it.
+- Node.js 22 or newer. In this repository: `npm ci`, then `npm run dev`. Open the URL Vite prints. You can read the landing copy without a wallet.
+- Only if you choose the optional matcher: a wallet you control, set to **Base Sepolia** (chain id 84532).
+- A little test ETH for gas, and test EURC, only for that matcher. If you do not have test EURC, skip this rail. Do not switch the wallet to Base mainnet to get it. Do not buy Base.
 
 ## Merchant
 
@@ -39,4 +41,4 @@ The steps below match the merchant and buyer **live test** panels and `docs/MATC
 
 ## Stop
 
-Mainnet links are refused. Nothing in this checklist turns mainnet on. The header reset clears practice data and the sale saved on this device. A backup file you already downloaded stays on disk.
+Mainnet links are refused. Nothing in this checklist turns mainnet on, and nothing in it asks anyone to fund Base. The header reset clears practice data and the sale saved on this device. A backup file you already downloaded stays on disk. The product remains any-in → any-out for an online shop, a store, or a market stall, with a QR or pay-link and nothing to install. This checklist only walks the optional Base Sepolia matcher.

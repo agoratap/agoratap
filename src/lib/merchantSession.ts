@@ -1,4 +1,4 @@
-// On-device record of live test sales (Base Sepolia only).
+// On-device record of live test sales on the optional Base Sepolia matcher. Not a Base-only product definition.
 // The JSON file and the IndexedDB row are the same bytes. Neither holds a wallet key.
 // Agora Pay does not hold keys or funds. Import refuses mainnet and refuses key material.
 import { isAddress, type OpenRequest } from './chainRequest'

@@ -1,6 +1,6 @@
 // Live (testnet, read-only) orchestration: open a request at the current chain head, then poll the chain for it.
 // No key, no signing, no custody. Network comes only through the injected reader. Base MAINNET is refused unless
-// the caller explicitly sets allowMainnet (the app screens never do: this stage is Base Sepolia only, no real funds).
+// the caller explicitly sets allowMainnet (the app screens never do). The screens use the Base Sepolia matcher only. That matcher is one optional rail, not the product. No real funds.
 import { toAtomicEurc, type ChainName, type OpenRequest } from './chainRequest'
 import type { ChainReader } from './chainReader'
 import { evaluatePayment, windowFrom, type Observation, type PaymentState, type RequestWindow } from './confirmation'

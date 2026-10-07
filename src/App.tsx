@@ -94,8 +94,8 @@ function App() {
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
       <footer className="legal-footer">{screen === 'home'
-        ? 'Early pilot — non-custodial. You pay from your wallet to the merchant’s address. Not a regulated payment service.'
-        : 'Practice screens use simulated balances. Live checks are Base Sepolia only. Not a regulated payment service.'}</footer>
+        ? 'Early pilot — any-in → any-out. Pay with crypto you hold; the merchant receives on their rail. Nothing to install. Not a regulated payment service.'
+        : 'Practice screens use simulated balances. The live matcher is one optional Base Sepolia rail. Mainnet payments are not enabled. Not a regulated payment service.'}</footer>
     </div>
   )
 }
@@ -104,40 +104,40 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   return <div className="home-page">
     <section className="hero">
       <div className="eyebrow"><ShieldCheck size={15} /> EARLY PILOT · NON-CUSTODIAL</div>
-      <h1>Pay from your wallet.<br /><em>Straight to the merchant.</em></h1>
-      <p className="hero-copy">Early pilot — non-custodial. You pay from your wallet to the merchant’s address. Agora Pay does not hold keys or funds, and it does not take a fee on the payment.</p>
-      <div className="privacy-promise"><Fingerprint size={17} /><span><strong>No routine buyer KYC is the design target.</strong> Not a current legal guarantee; production thresholds and controls require counsel and licensed partners.</span></div>
+      <h1>Pay with what you hold.<br /><em>They receive what they want.</em></h1>
+      <p className="hero-copy">Agora Pay is any-in → any-out. You pay in crypto you already hold — bitcoin, USDT on Tron, or another asset the route supports. The merchant receives on the payout rail they prefer. An online shop, a store counter, or a market stall installs nothing and shows a QR or pay-link on a phone.</p>
+      <div className="privacy-promise"><Fingerprint size={17} /><span><strong>No routine buyer KYC is a design target, not a legal guarantee.</strong> Agora Pay does not hold keys or funds, and it does not take a fee on the payment.</span></div>
       <div className="hero-actions">
         <button className="primary" onClick={() => onNavigate('pilot')}>Start a merchant pilot session <FlaskConical size={18} /></button>
         <button className="secondary" onClick={() => onNavigate('merchant')}>Open the merchant screen</button>
       </div>
-      <div className="honesty"><Info size={16} /><span><strong>What is live today.</strong> The till and wallet screens are practice flows with simulated balances on this device. Chain checks run on Base Sepolia only, with test tokens. Mainnet payments are not enabled.</span></div>
+      <div className="honesty"><Info size={16} /><span><strong>What is live today.</strong> The till and wallet screens are practice flows with simulated balances on this device. The shipped matcher is one optional rail on Base Sepolia: a read-only share link and test tokens. That rail is not the product. A phone QR, other payout rails, and a live any-in → any-out swap are the direction, not this page yet. Mainnet payments are not enabled. You do not need to fund Base.</span></div>
     </section>
 
     <section className="role-panel">
       <button className="role-card buyer-card" onClick={() => onNavigate('buyer')}>
         <span className="role-number">01</span><WalletCards size={26} />
-        <div><span className="role-label">FOR PEOPLE</span><h2>Pay the merchant from your wallet.</h2><p>Non-custodial. Unlinkable credentials remain a design target, not something this pilot already delivers.</p></div>
+        <div><span className="role-label">FOR PEOPLE</span><h2>Pay with crypto you already hold.</h2><p>Bitcoin, USDT on Tron, or another asset the route supports. This pilot does not ask you to buy or fund Base.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
       <button className="role-card merchant-card" onClick={() => onNavigate('merchant')}>
         <span className="role-number">02</span><Store size={26} />
-        <div><span className="role-label">FOR MERCHANTS</span><h2>You receive at your own address.</h2><p>Agora Pay does not hold the payment. The merchant stays identified and auditable.</p></div>
+        <div><span className="role-label">FOR MERCHANTS</span><h2>Online, in-store, or a market stall.</h2><p>You receive on the payout rail you prefer. You install nothing. Show a QR or pay-link on the phone you already have.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
     </section>
 
     <section className="pilot-offer">
-      <div><span className="section-kicker">MERCHANT PILOT</span><h2>One checkout. One browser session. No custody.</h2></div>
-      <div><p>Walk a merchant through the till in this browser. No order is sent to GNU Taler or any other service. No customer data, credentials, or funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
+      <div><span className="section-kicker">MERCHANT PILOT</span><h2>A pay-link on a phone. Nothing to install.</h2></div>
+      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. The merchant is paid on the rail they chose. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
-      <div><span className="section-kicker">HOW A PAYMENT MOVES</span><h2>Wallet to address.<br />Agora Pay stays out.</h2></div>
+      <div><span className="section-kicker">HOW A PAYMENT IS MEANT TO MOVE</span><h2>Any asset in.<br />Their rail out.</h2></div>
       <div className="steps">
-        <article><span>1</span><div><h3>Address</h3><p>The merchant names an address they already control. Agora Pay does not create or hold that address.</p></div></article>
-        <article><span>2</span><div><h3>Pay</h3><p>The buyer sends from their own wallet to that address. Agora Pay is not in the path of the funds.</p></div></article>
-        <article><span>3</span><div><h3>Check</h3><p>A read-only look at Base Sepolia can show whether a matching test transfer arrived. Mainnet stays off.</p></div></article>
+        <article><span>1</span><div><h3>Show</h3><p>The merchant shows a QR or pay-link on a phone. Nothing to install. A website, a counter, and a market stall use the same gesture.</p></div></article>
+        <article><span>2</span><div><h3>Pay</h3><p>The payer sends an asset they already hold, such as BTC or USDT-TRC20. Agora Pay does not take custody of it.</p></div></article>
+        <article><span>3</span><div><h3>Receive</h3><p>The merchant is paid on the payout rail they prefer. The matcher in this pilot is one optional Base Sepolia check. Mainnet stays off.</p></div></article>
       </div>
       <button className="text-link" onClick={() => onNavigate('architecture')}>See how the system fits together <ArrowRight size={16} /></button>
     </section>
@@ -198,6 +198,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
     </div>
     <div className="pay-summary"><div><span>Corner Market</span><strong>{money(request.amount)}</strong></div><div><span>Paying from</span><strong>{asset} · {quote.totalSourceAmount.toFixed(2)}</strong></div></div>
     <div className="demo-note"><Radio size={16} /> No NFC hardware is accessed. This interaction is simulated.</div>
+    <p className="fine-print">Practice gesture. The product way to pay is a QR or pay-link on the seller’s phone — online shop, store, or market stall — not a website checkout they must host.</p>
   </FlowLayout>
 
   if (step === 'quote') return <FlowLayout title="Review payment" onBack={() => setStep('wallet')} progress={50}>
@@ -221,6 +222,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
       <button onClick={() => setData({ ...data, balances: { ...data.balances, EURC: data.balances.EURC + 25 } })}><CircleDollarSign size={16} /> Add €25 practice funds</button>
     </div>
     <div className="section-row"><h3>Choose how to pay</h3><button onClick={() => setStep('privacy')}><LockKeyhole size={14} /> Privacy</button></div>
+    <p className="fine-print">Practice sample on this device. The product is any crypto in — BTC, USDT-TRC20, and other assets a route supports — and the merchant’s chosen payout rail out. These two buttons are not the asset list.</p>
     <div className="asset-list">
       <button className={asset === 'EURC' ? 'selected' : ''} onClick={() => setAsset('EURC')}><span className="asset-icon euro">€</span><div><strong>EURC</strong><small>Euro stablecoin</small></div><span className="asset-balance">{data.balances.EURC.toFixed(2)}<small>≈ {money(data.balances.EURC)}</small></span><span className="radio-dot" /></button>
       <button className={asset === 'USDC' ? 'selected' : ''} onClick={() => setAsset('USDC')}><span className="asset-icon dollar">$</span><div><strong>USDC</strong><small>Dollar stablecoin</small></div><span className="asset-balance">{data.balances.USDC.toFixed(2)}<small>≈ {money(data.balances.USDC * 0.92)}</small></span><span className="radio-dot" /></button>
@@ -264,7 +266,7 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
   </FlowLayout>
 
   if (step === 'request' && request) return <FlowLayout title="Payment request" onBack={() => setStep('amount')} progress={66}>
-    <div className="request-card"><div className="request-signal"><Smartphone /><span><Wifi /></span></div><span>READY FOR TAP</span><h2>{money(request.amount)}</h2><p>Ask the buyer to hold their phone near this device.</p></div>
+    <div className="request-card"><div className="request-signal"><Smartphone /><span><Wifi /></span></div><span>PRACTICE REQUEST</span><h2>{money(request.amount)}</h2><p>In the product, show a QR or pay-link on the phone you already have. This tap is a practice gesture on this device.</p></div>
     <div className="request-details"><div><span>Settlement</span><strong>{request.settlement === 'SEPA_INSTANT' ? 'SEPA Instant · simulated' : 'EUR stablecoin'}</strong></div><div><span>Request ID</span><strong>{request.id.slice(0, 12)}…</strong></div></div>
     <button className="primary full" onClick={simulate}>Simulate buyer tap <Send size={17} /></button>
     <div className="demo-note"><Radio size={16} /> Waiting is simulated; no external payment is requested.</div>
@@ -274,7 +276,8 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
     <button className="history-button" onClick={() => setStep('receipts')}><History size={17} /> Daily receipts <ChevronRight size={17} /></button>
     <label className="amount-entry"><span>AMOUNT DUE</span><div><b>€</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Amount due" /></div></label>
     <div className="quick-amounts">{['4.50', '8.00', '12.50', '20.00'].map((v) => <button key={v} onClick={() => setAmount(v)}>€{v}</button>)}</div>
-    <div className="settlement-title"><span>SETTLE TO</span><small>You can change this for every sale</small></div>
+    <div className="settlement-title"><span>SETTLE TO</span><small>Practice sample. In the product you pick the payout rail you want.</small></div>
+    <p className="fine-print">Online shop, offline store, or market stall. You install nothing. A buyer pays from a QR or pay-link on your phone. The live test below is the optional Base Sepolia matcher, not the whole product. You do not need to fund Base.</p>
     <div className="settlement-options">
       <button className={settlement === 'EUR_STABLECOIN' ? 'selected' : ''} onClick={() => setSettlement('EUR_STABLECOIN')}><span className="settlement-icon"><CircleDollarSign /></span><div><strong>EUR stablecoin</strong><small>Instant · practice balance</small></div><span className="radio-dot" /></button>
       <button className={settlement === 'SEPA_INSTANT' ? 'selected' : ''} onClick={() => setSettlement('SEPA_INSTANT')}><span className="settlement-icon"><Landmark /></span><div><strong>SEPA Instant</strong><small>Simulated fiat settlement</small></div><span className="radio-dot" /></button>
@@ -354,7 +357,7 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
   }
 
   return <FlowLayout title="Merchant pilot" onBack={onBack} progress={100} wide>
-    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Practice the checkout.<br />Early pilot — no live funds.</h2><p>This screen creates a practice merchant session in this browser. It makes no network request and does not create, inspect or pay a GNU Taler order.</p></div>
+    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Practice the pay-link.<br />Early pilot — no live funds.</h2><p>This screen creates a practice merchant session in this browser. It is for an online shop, a counter, or a market stall. The seller installs nothing and would show a QR or pay-link on a phone. The payer’s crypto and the merchant’s payout rail can differ: that any-in → any-out path is the product. This page does not run that swap. It makes no network request, does not move funds, and does not create, inspect or pay a GNU Taler order.</p></div>
     <div className="protocol-grid">
       <section className="protocol-form">
         {!session ? <>
@@ -399,14 +402,14 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
 
 function Architecture({ onBack }: { onBack: () => void }) {
   return <FlowLayout title="System map" onBack={onBack} progress={100} wide>
-    <div className="architecture-intro"><span className="section-kicker">PRODUCTION DIRECTION</span><h2>Unlinkable at the till.<br />Identified at the merchant.</h2><p>Core differentiator: no routine buyer KYC or identity collection within lawful low-risk thresholds. The merchant is KYB-identified and auditable. This is a design target requiring counsel and licensed partners, not a guarantee of this early pilot.</p></div>
+    <div className="architecture-intro"><span className="section-kicker">PRODUCT DIRECTION</span><h2>Any asset in.<br />Their rail out.</h2><p>Agora Pay is any-in → any-out. Online shops, offline stores, and market stalls use the same gesture: the seller shows a QR or pay-link on a phone and installs nothing. The payer sends crypto they already hold. The merchant is paid on the payout rail they prefer. The matcher in this early pilot is one optional rail on Base Sepolia. It is not the product, and nobody has to fund Base. Mainnet is not enabled. No routine buyer KYC remains a design target, not a guarantee of this pilot.</p></div>
     <div className="system-map">
-      <article><span>01</span><WalletCards /><h3>Buyer wallet</h3><p>Holds unlinkable payment tokens. No reusable shopper ID at checkout.</p><small>BUYER DEVICE</small></article><i>→</i>
-      <article className="core"><span>02</span><Radio /><h3>Licensed issuer / GNU Taler exchange</h3><p>Validates one-time value without building a buyer transaction graph. Agora Pay integrates; it does not operate this regulated layer.</p><small>OPEN PROTOCOL · PARTNER LAYER</small></article><i>→</i>
-      <article><span>03</span><Store /><h3>Merchant till</h3><p>Identified merchant receives proof and settlement, not a shopper profile.</p><small>MERCHANT DEVICE</small></article>
+      <article><span>01</span><WalletCards /><h3>Payer</h3><p>Sends BTC, USDT-TRC20, or another asset they already hold. Not a new chain they must buy for this pilot.</p><small>PAYER DEVICE</small></article><i>→</i>
+      <article className="core"><span>02</span><Radio /><h3>Any-in → any-out route</h3><p>A LibertySwap / Trocador-class path turns what was paid into what the merchant asked to receive. Agora Pay does not hold keys or funds. This route is the direction; this pilot does not run a live swap.</p><small>ROUTE · NOT CUSTODY</small></article><i>→</i>
+      <article><span>03</span><Store /><h3>Merchant</h3><p>Online, at a counter, or at a stall. Shows a QR or pay-link on a phone. Receives on their preferred payout rail. Installs nothing.</p><small>PHONE THEY ALREADY HAVE</small></article>
     </div>
-    <div className="rail-map"><div><Building2 /><span><small>REGULATED EDGE</small><strong>Licensed CASP / EMI</strong></span></div><div><Landmark /><span><small>FIAT SETTLEMENT</small><strong>SEPA Instant partner</strong></span></div></div>
-    <div className="boundary-grid"><article><h3>What changes</h3><p>No card-network authorization. No merchant-side buyer profiling. Unlinkable credentials instead of a crypto card.</p></article><article><h3>What remains</h3><p>Merchant KYB, sanctions/AML at lawful boundaries, licensed rails. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Interaction, quote clarity, settlement choice and merchant audit export—not production cryptography or legal anonymity.</p></article></div>
+    <div className="rail-map"><div><Building2 /><span><small>ONE OPTIONAL RAIL</small><strong>Base Sepolia matcher</strong></span></div><div><Landmark /><span><small>MERCHANT PAYOUT</small><strong>The rail they prefer</strong></span></div></div>
+    <div className="boundary-grid"><article><h3>What the product is</h3><p>Payer asset in, merchant rail out, for every kind of seller. A phone QR or pay-link, not a website checkout the merchant must host.</p></article><article><h3>What stays true</h3><p>Non-custodial. Agora Pay does not hold keys or funds. Sanctions screening stays a warning. Mainnet stays off. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Practice screens, plus one optional Base Sepolia share link with test tokens. It does not yet draw a QR or settle every rail.</p></article></div>
   </FlowLayout>
 }
 

@@ -1,41 +1,49 @@
 # Architecture
 
-Status: rewritten 2026-10-01 to the non-custodial model. Earlier text described an issuer/exchange layer with a licensed CASP/EMI and KYB-identified merchants; that is no longer the design.
+Status: product definition updated 2026-10-07. The 2026-10-01 non-custodial notes below still describe the shipped Base matcher. They do not define the product as Base-only, and they do not define an MVP that is Base mainnet.
 
-## Purpose
+## Product
 
-AgoraTap is a common language for **offer → authorisation → payment → proof** between two parties who have already agreed on a trade. It moves nothing itself.
+Agora Pay is **any-in → any-out**. The payer sends an asset they already hold (bitcoin, USDT-TRC20, or another asset a route supports). The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link the seller shows on a phone, not a website checkout the merchant must host.
 
-**Product invariant:** the buyer pays from their own wallet directly to the merchant's address, in an asset they choose from the merchant's accepted list. AgoraTap holds no keys, holds no funds, converts nothing, relays nothing.
+Agora Pay does not hold keys or funds. Mainnet is not enabled in this repository. Nobody has to fund Base to use or pilot the product.
+
+The route class is a LibertySwap / Trocador-style path: what went in is not required to be what the merchant receives. That route is the product direction. It is not a live swap in this repository. The direct Base transfer described later is one optional rail, the matcher that is already shipped on Base Sepolia.
+
+## Purpose (non-custodial note, 2026-10-01)
+
+Agora Pay is a common language for **offer → authorisation → payment → proof** between two parties who have already agreed on a trade. It moves nothing itself and holds no keys.
+
+The shipped matcher lets a buyer pay a Base Sepolia test transfer to an address the merchant already controls. That is one rail. It is not the product invariant. The product invariant is any-in → any-out onto the merchant’s preferred payout rail, for every kind of seller, with nothing to install.
 
 ## What exists today [FACT]
 
-1. **Local demo (React/Vite PWA)** — simulated buyer/merchant flow, one versioned `localStorage` record (`agoratap-demo-v1`), merchant-readiness session in memory only. No network calls.
+1. **Local practice PWA (React/Vite)** — simulated buyer/merchant flow. The storage key is `agorapay-pilot-v1` (an older `agoratap-demo-v1` record is copied once). The live-test panels make read-only Base Sepolia calls. That contact is the optional matcher, not the product, and it does not enable mainnet.
 2. **Request library `src/lib/chainRequest.ts` (+ test)**
    - `createRequest` / `eip681Uri`: builds an EIP-681 payment URI for EURC or USDC on Base. Amount = base amount plus a unique micro-tag (max 9999 micro-USDC) so each open request is distinguishable.
    - `matchRequest`: given public transfer logs, finds the transfer that matches an open request.
    - `createOffer` / `matchOffer`: asset-neutral offer — the merchant lists accepted assets, the buyer pays whichever they hold.
    - No keys, no network calls, no fee in this code.
 
-## Data flow (design)
+## Data flow of the optional Base matcher
+
+This diagram is the shipped Base Sepolia rail, not the any-in → any-out product. The product way to pay is a QR or pay-link on a phone. This matcher does not draw that QR.
 
 ```text
-Merchant: creates offer (accepted assets, amount, own receiving address)
-   │  link / QR (EIP-681)
+Merchant: creates a test request (EURC on Base Sepolia, own receiving address)
+   │  share link (EIP-681 + #ref=)
    ▼
-Buyer: opens in own wallet, picks an accepted asset, signs and sends himself
-   │  on-chain transfer, wallet → wallet
+Payer: opens it in their own wallet and sends the test transfer
+   │  on-chain transfer, wallet → address
    ▼
-Public chain
+Base Sepolia
    │  read-only
    ▼
-Reader (optional, replaceable, self-hostable): sees matching transfer → shows "paid"
-   ▼
-Accounting layer (the paid product): reconciliation, exports, reports
+Reader in this app: sees a matching test transfer → shows a state
 ```
 
 - The **reader** only reads public data. It does not sign, send or hold. The merchant must be able to run it themselves or ignore it and still be paid.
-- If the merchant wants a different asset or fiat, **they** convert, on their side, through a provider they choose. AgoraTap is not in that path.
+- If the merchant wants a different asset or fiat, the **product direction** is an any-in → any-out route (LibertySwap / Trocador class) that pays their preferred rail. Agora Pay is not in custody of the funds. That route is not built in this repository. The diagram above is the optional Base matcher, where a test transfer lands on an address the merchant already controls.
 
 ## Trust and threat table
 
@@ -49,7 +57,7 @@ Honest limits: payments on a public chain are publicly linkable. The unique-amou
 
 ## Non-goals
 
-Custody, key management, exchange/conversion, relaying or broadcasting transactions, stablecoin issuance, buyer KYC, merchant KYB, card networks, bank APIs, refunds on behalf of anyone. (Refunds are a new payment from the merchant's own wallet.)
+Custody, key management, Agora Pay holding a float or operating an exchange, relaying or broadcasting transactions from this app, stablecoin issuance, a buyer-KYC gate, card networks, and refunds on behalf of anyone. (Refunds are a new payment from the merchant's own wallet.) A partner-class any-in → any-out route is the product direction. It is not built here. This app still does not sign or send, and it does not ask anyone to fund Base.
 
 ## Design principles
 
