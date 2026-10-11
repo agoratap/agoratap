@@ -1,6 +1,6 @@
 # Validation Plan
 
-> Product under test, as of 2026-10-07: **any-in → any-out**. The payer sends crypto they already hold. The merchant receives on the payout rail they prefer. Merchants are online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link on a phone, not a website checkout. The Base Sepolia matcher is one optional rail, not a Base-mainnet MVP. Do not recruit a pilot that requires anyone to fund Base. The phases below are an older usability plan. They are not the product definition.
+> Product under test, as of 2026-10-07: **any-in → any-out**. The payer sends crypto they already hold. For an EU leg, preferred payout assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. The merchant receives on the payout rail they prefer. Merchants are online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link on a phone, not a website checkout. The Base Sepolia matcher is one optional rail, not a Base-mainnet MVP. Do not recruit a pilot that requires anyone to fund Base. The phases below are an older usability plan. They are not the product definition.
 
 ## Objective
 
@@ -19,7 +19,7 @@ Measure:
 - understanding that the **merchant stays identified** and receipts are a merchant audit trail;
 - ability to distinguish AgoraTap from a Visa-style crypto card;
 - time to complete, critical errors and confidence rating;
-- merchant preference between EUR stablecoin and fiat settlement, with reason.
+- merchant preference between EURC and fiat settlement, with reason.
 
 Exit criteria: ≥80% unassisted completion on both core flows; ≥80% correctly answer quote and privacy-boundary questions; no participant mistakes the demo for real funds or for guaranteed anonymity after onboarding.
 

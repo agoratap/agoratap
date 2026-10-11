@@ -1,6 +1,6 @@
 # Agora Pay
 
-Agora Pay is an early pilot of **any-in → any-out** settlement. The payer sends crypto they already hold (bitcoin, USDT on Tron, or another asset a route supports). The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link shown on a phone, not a website checkout the merchant must host.
+Agora Pay is an early pilot of **any-in → any-out** settlement. The payer sends crypto they already hold. For an EU leg, preferred assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. If a payer holds USDT, that stays optional and payer-side only: Agora Pay does not route USDT to EUR. The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link shown on a phone, not a website checkout the merchant must host.
 
 The matcher shipped in this repository is **one optional rail** on Base Sepolia (test tokens, a read-only share link). It is not the product. Following this pilot does not require funding Base. Mainnet is not enabled. A phone QR, other payout rails, and a live swap are the direction; they are not what these screens do yet.
 
@@ -48,6 +48,7 @@ Run all checks: `npm ci && npm test`.
 - Screening is not wired into `chainRequest.ts`. The check field in the merchant screen is separate from the fictional demo sale, and no payer address is read from the chain (see above), so nothing checks a real payer automatically.
 - No unlinkable payments, no tokens, no GNU Taler integration. The text in the demo that mentions unlinkable payments describes a design goal that is not implemented.
 - No custody, issuance, exchange, fiat settlement or bank connection of any kind.
+- No USDT-on-EU payout and no USDT→EUR route. EU legs in this copy prefer USDC, EURC, BTC, and ETH. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. The legal read sits outside this repository.
 - No audit, no security review, no legal review. No lawyer has signed off on anything here.
 - The authors have not chosen how, or whether, this project will make money.
 
@@ -80,4 +81,5 @@ Practice-screen state stays in the browser's `localStorage`. Live sales stay in 
 - [docs/PILOT_ONBOARDING.md](docs/PILOT_ONBOARDING.md): the product is any-in → any-out for every kind of merchant. The Base Sepolia steps are an optional matcher walkthrough. Mainnet stays off.
 - [docs/CORE_RULE.md](docs/CORE_RULE.md): the rules that protect the project's core.
 - [docs/REGULATORY_BOUNDARIES.md](docs/REGULATORY_BOUNDARIES.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): current design notes (rewritten for the non-custodial model; still working documents, not statements of legal position).
+- [docs/ESMA_USDT_EU_FOLD_2026-10-11.md](docs/ESMA_USDT_EU_FOLD_2026-10-11.md): EU legs prefer USDC, EURC, BTC, and ETH. No USDT-on-EU plan. Product copy only; Tom Hagen owns the legal read.
 - [SECURITY.md](SECURITY.md)

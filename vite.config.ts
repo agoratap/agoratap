@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Agora Pay',
         short_name: 'Agora Pay',
-        description: 'Early pilot. Any-in → any-out: pay with crypto you hold. The merchant shows a QR or pay-link and installs nothing.',
+        description: 'Early pilot. Any-in → any-out. For an EU leg, preferred payout assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout.',
         theme_color: '#123b2e',
         background_color: '#f3f1e8',
         display: 'standalone',
