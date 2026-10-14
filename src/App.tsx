@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, Building2, Check, ChevronRight, CircleDollarSign,
-  Download, Fingerprint, FlaskConical, History, Info, Landmark, Leaf, LockKeyhole, Radio,
+  Download, Fingerprint, FlaskConical, History, Info, Landmark, Leaf, LockKeyhole, Printer, Radio,
   RefreshCcw, Send, ShieldCheck, Smartphone, Store, WalletCards, Wifi,
 } from 'lucide-react'
 import { receiptsToCsv } from './lib/export'
@@ -16,8 +16,10 @@ import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 import { LEGACY_STORAGE_KEY, STORAGE_KEY, resolveStoredRecord } from './lib/storage'
 import { beginDeviceMerchantSessionClear } from './lib/merchantSession'
+import { StallPay, StallSheet } from './StallSheet'
+import { browserPageHref, initialStallScreen, nextStallLocation, payMerchantFromLocation } from './lib/stallSheet'
 
-type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture'
+type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture' | 'stall' | 'pay'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
 type MerchantStep = 'amount' | 'request' | 'complete' | 'receipts'
 
@@ -63,8 +65,32 @@ const when = (date: string) => new Intl.DateTimeFormat('en-IE', { hour: '2-digit
 
 function DemoLabel() { return <span className="demo-label"><span />EARLY PILOT · PRACTICE</span> }
 
+function initialScreen(): Screen {
+  return initialStallScreen() ?? 'home'
+}
+
 function App() {
-  const [screen, setScreen] = useState<Screen>('home')
+  const [screen, setScreenRaw] = useState<Screen>(initialScreen)
+  const setScreen = (next: Screen) => {
+    setScreenRaw(next)
+    if (typeof history === 'undefined' || typeof location === 'undefined') return
+    const current = new URL(location.href).toString()
+    const href = nextStallLocation(location.href, next === 'stall' || next === 'pay' ? next : 'other')
+    if (href === current) return
+    if (next === 'stall') history.pushState(null, '', href)
+    else history.replaceState(null, '', href)
+  }
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const sync = () => {
+      const route = initialStallScreen()
+      if (route === 'stall') setScreenRaw('stall')
+      else if (route === 'pay') setScreenRaw('pay')
+      else setScreenRaw((current) => (current === 'stall' ? 'merchant' : current === 'pay' ? 'home' : current))
+    }
+    window.addEventListener('popstate', sync)
+    return () => window.removeEventListener('popstate', sync)
+  }, [])
   const [data, setDataRaw] = useState<DemoState>(loadState)
   const setData = (next: DemoState) => { setDataRaw(next); localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) }
   const reset = () => {
@@ -89,7 +115,9 @@ function App() {
       <main>
         {screen === 'home' && <Home onNavigate={setScreen} />}
         {screen === 'buyer' && <Buyer data={data} setData={setData} onBack={() => setScreen('home')} />}
-        {screen === 'merchant' && <Merchant data={data} setData={setData} onBack={() => setScreen('home')} />}
+        {screen === 'merchant' && <Merchant data={data} setData={setData} onBack={() => setScreen('home')} onStall={() => setScreen('stall')} />}
+        {screen === 'stall' && <StallSheet pageHref={browserPageHref()} onBack={() => setScreen('merchant')} />}
+        {screen === 'pay' && <StallPay merchantName={payMerchantFromLocation()} onBack={() => setScreen('home')} />}
         {screen === 'pilot' && <MerchantPilot onBack={() => setScreen('home')} />}
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
@@ -111,7 +139,7 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
         <button className="primary" onClick={() => onNavigate('pilot')}>Start a merchant pilot session <FlaskConical size={18} /></button>
         <button className="secondary" onClick={() => onNavigate('merchant')}>Open the merchant screen</button>
       </div>
-      <div className="honesty"><Info size={16} /><span><strong>What is live today.</strong> The till and wallet screens are practice flows with simulated balances on this device. The shipped matcher is one optional rail on Base Sepolia: a read-only share link and test tokens. That rail is not the product. A phone QR, other payout rails, and a live any-in → any-out swap are the direction, not this page yet. Mainnet payments are not enabled. You do not need to fund Base.</span></div>
+      <div className="honesty"><Info size={16} /><span><strong>What is live today.</strong> The till and wallet screens are practice flows with simulated balances on this device. The shipped matcher is one optional rail on Base Sepolia: a read-only share link and test tokens. That rail is not the product. The merchant screen prints a market-stall QR of a pay-link. That sheet does not move funds. Other payout rails and a live any-in → any-out swap are the direction, not this page yet. Mainnet payments are not enabled. You do not need to fund Base.</span></div>
     </section>
 
     <section className="role-panel">
@@ -233,7 +261,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
   </FlowLayout>
 }
 
-function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: DemoState) => void; onBack: () => void }) {
+function Merchant({ data, setData, onBack, onStall }: { data: DemoState; setData: (d: DemoState) => void; onBack: () => void; onStall: () => void }) {
   const [step, setStep] = useState<MerchantStep>('amount')
   const [amount, setAmount] = useState('12.50')
   const [settlement, setSettlement] = useState<Settlement>('EUR_STABLECOIN')
@@ -274,6 +302,7 @@ function Merchant({ data, setData, onBack }: { data: DemoState; setData: (d: Dem
 
   return <FlowLayout title="New sale" onBack={onBack} progress={33}>
     <button className="history-button" onClick={() => setStep('receipts')}><History size={17} /> Daily receipts <ChevronRight size={17} /></button>
+    <a className="secondary full stall-entry" href="#stall" onClick={(event) => { event.preventDefault(); onStall() }}><Printer size={18} /> Print market stall sheet</a>
     <label className="amount-entry"><span>AMOUNT DUE</span><div><b>€</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Amount due" /></div></label>
     <div className="quick-amounts">{['4.50', '8.00', '12.50', '20.00'].map((v) => <button key={v} onClick={() => setAmount(v)}>€{v}</button>)}</div>
     <div className="settlement-title"><span>SETTLE TO</span><small>Practice sample. In the product you pick the payout rail you want.</small></div>
@@ -409,7 +438,7 @@ function Architecture({ onBack }: { onBack: () => void }) {
       <article><span>03</span><Store /><h3>Merchant</h3><p>Online, at a counter, or at a stall. Shows a QR or pay-link on a phone. Receives on their preferred payout rail. Installs nothing.</p><small>PHONE THEY ALREADY HAVE</small></article>
     </div>
     <div className="rail-map"><div><Building2 /><span><small>ONE OPTIONAL RAIL</small><strong>Base Sepolia matcher</strong></span></div><div><Landmark /><span><small>MERCHANT PAYOUT</small><strong>The rail they prefer</strong></span></div></div>
-    <div className="boundary-grid"><article><h3>What the product is</h3><p>Payer asset in, merchant rail out, for every kind of seller. A phone QR or pay-link, not a website checkout the merchant must host.</p></article><article><h3>What stays true</h3><p>Non-custodial. Agora Pay does not hold keys or funds. Sanctions screening stays a warning. Mainnet stays off. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Practice screens, plus one optional Base Sepolia share link with test tokens. It does not yet draw a QR or settle every rail.</p></article></div>
+    <div className="boundary-grid"><article><h3>What the product is</h3><p>Payer asset in, merchant rail out, for every kind of seller. A phone QR or pay-link, not a website checkout the merchant must host.</p></article><article><h3>What stays true</h3><p>Non-custodial. Agora Pay does not hold keys or funds. Sanctions screening stays a warning. Mainnet stays off. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Practice screens, a printable market-stall QR of the merchant pay-link, and one optional Base Sepolia share link with test tokens. The sheet does not move funds or settle every rail.</p></article></div>
   </FlowLayout>
 }
 

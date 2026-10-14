@@ -18,7 +18,7 @@ The shipped matcher lets a buyer pay a Base Sepolia test transfer to an address 
 
 ## What exists today [FACT]
 
-1. **Local practice PWA (React/Vite)** — simulated buyer/merchant flow. The storage key is `agorapay-pilot-v1` (an older `agoratap-demo-v1` record is copied once). The live-test panels make read-only Base Sepolia calls. That contact is the optional matcher, not the product, and it does not enable mainnet.
+1. **Local practice PWA (React/Vite)** — simulated buyer/merchant flow, plus a printable market-stall sheet (`#stall`) whose QR is an https pay-link. The storage key is `agorapay-pilot-v1` (an older `agoratap-demo-v1` record is copied once). The live-test panels make read-only Base Sepolia calls. That contact is the optional matcher, not the product, and it does not enable mainnet. The stall sheet does not move funds.
 2. **Request library `src/lib/chainRequest.ts` (+ test)**
    - `createRequest` / `eip681Uri`: builds an EIP-681 payment URI for EURC or USDC on Base. Amount = base amount plus a unique micro-tag (max 9999 micro-USDC) so each open request is distinguishable.
    - `matchRequest`: given public transfer logs, finds the transfer that matches an open request.
@@ -27,7 +27,7 @@ The shipped matcher lets a buyer pay a Base Sepolia test transfer to an address 
 
 ## Data flow of the optional Base matcher
 
-This diagram is the shipped Base Sepolia rail, not the any-in → any-out product. The product way to pay is a QR or pay-link on a phone. This matcher does not draw that QR.
+This diagram is the shipped Base Sepolia rail, not the any-in → any-out product. The product way to pay is a QR or pay-link on a phone. This matcher does not draw that QR. The market-stall sheet does, and the code in that QR is an https pay-link, not a Base transfer.
 
 ```text
 Merchant: creates a test request (EURC on Base Sepolia, own receiving address)
