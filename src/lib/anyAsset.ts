@@ -1,6 +1,6 @@
 /**
  * Any-asset catalog and INDICATIVE swap quotes.
- * Reference rates are hard-coded sample values (EUR per unit), not live prices.
+ * Reference rates are hard-coded sample values (EUR per unit, set 15 Oct 2026 from Exolix live quotes), not live prices.
  * No network request, no funds, no partner account. Shape mirrors a
  * LibertySwap / FixedFloat-class float quote: rate, spread fee, network fee.
  */
@@ -34,21 +34,21 @@ export const ASSET_CATALOG: CatalogAsset[] = [
   c('usdc-polygon', 'USDC', 'Dollar stablecoin', 'Polygon', 0.92, 0.05),
   c('usdc-arb', 'USDC', 'Dollar stablecoin', 'Arbitrum', 0.92, 0.1),
   c('eurc-eth', 'EURC', 'Euro stablecoin', 'Ethereum', 1, 1.4),
-  c('btc', 'BTC', 'Bitcoin', 'Bitcoin', 58000, 0.00002),
-  c('eth', 'ETH', 'Ether', 'Ethereum', 2300, 0.0004),
-  c('xmr', 'XMR', 'Monero', 'Monero', 150, 0.0001),
+  c('btc', 'BTC', 'Bitcoin', 'Bitcoin', 74000, 0.00002),
+  c('eth', 'ETH', 'Ether', 'Ethereum', 2170, 0.0004),
+  c('xmr', 'XMR', 'Monero', 'Monero', 495, 0.0001),
   c('usdt-tron', 'USDT', 'Tether', 'Tron (TRC-20)', 0.92, 1),
   c('usdt-eth', 'USDT', 'Tether', 'Ethereum (ERC-20)', 0.92, 1.5),
   c('usdt-sol', 'USDT', 'Tether', 'Solana', 0.92, 0.01),
   c('usdt-bsc', 'USDT', 'Tether', 'BNB Smart Chain', 0.92, 0.1),
   c('usdt-polygon', 'USDT', 'Tether', 'Polygon', 0.92, 0.05),
-  c('sol', 'SOL', 'Solana', 'Solana', 130, 0.00001),
-  c('ltc', 'LTC', 'Litecoin', 'Litecoin', 65, 0.0001),
-  c('trx', 'TRX', 'TRON', 'Tron', 0.11, 1),
-  c('doge', 'DOGE', 'Dogecoin', 'Dogecoin', 0.11, 1),
+  c('sol', 'SOL', 'Solana', 'Solana', 93, 0.00001),
+  c('ltc', 'LTC', 'Litecoin', 'Litecoin', 54, 0.0001),
+  c('trx', 'TRX', 'TRON', 'Tron', 0.3, 1),
+  c('doge', 'DOGE', 'Dogecoin', 'Dogecoin', 0.073, 1),
   c('bnb', 'BNB', 'BNB', 'BNB Smart Chain', 520, 0.0002),
   c('xrp', 'XRP', 'XRP', 'XRP Ledger', 0.5, 0.01),
-  c('ada', 'ADA', 'Cardano', 'Cardano', 0.35, 0.2),
+  c('ada', 'ADA', 'Cardano', 'Cardano', 0.2, 0.2),
   c('dai', 'DAI', 'Dai', 'Ethereum', 0.92, 1.5),
   f('EUR', 'Euro', 1), f('USD', 'US dollar', 0.92), f('GBP', 'British pound', 1.17), f('JPY', 'Japanese yen', 0.0062),
   f('RON', 'Romanian leu', 0.2), f('CHF', 'Swiss franc', 1.05), f('PLN', 'Polish złoty', 0.23),
@@ -75,7 +75,7 @@ export function allowedPayouts(merchantInEu: boolean): PayoutAsset[] {
   return merchantInEu ? ['EURC', 'USDC', 'BTC', 'ETH', 'EUR'] : ['EURC', 'USDC', 'BTC', 'ETH', 'EUR', 'USDT', 'XMR']
 }
 
-const PAYOUT_EUR: Record<PayoutAsset, number> = { EURC: 1, EUR: 1, USDC: 0.92, USDT: 0.92, BTC: 58000, ETH: 2300, XMR: 150 }
+const PAYOUT_EUR: Record<PayoutAsset, number> = { EURC: 1, EUR: 1, USDC: 0.92, USDT: 0.92, BTC: 74000, ETH: 2170, XMR: 495 }
 
 export interface IndicativeQuote {
   from: CatalogAsset

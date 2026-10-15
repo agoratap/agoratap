@@ -17,7 +17,9 @@ import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pil
 import { LEGACY_STORAGE_KEY, STORAGE_KEY, resolveStoredRecord } from './lib/storage'
 import { beginDeviceMerchantSessionClear } from './lib/merchantSession'
 import { AnyAssetPicker } from './AnyAssetPicker'
-import { ASSET_CATALOG } from './lib/anyAsset'
+import { ASSET_CATALOG, assetLabel, indicativeQuote } from './lib/anyAsset'
+import { PAY_IN_LEGS } from './lib/exolix'
+import { RealSwap } from './RealSwap'
 import { StallPay, StallSheet } from './StallSheet'
 import { browserPageHref, initialStallScreen, nextStallLocation, payMerchantFromLocation } from './lib/stallSheet'
 
@@ -178,19 +180,23 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
   const [step, setStep] = useState<BuyerStep>('wallet')
   const [asset, setAsset] = useState<Asset>('EURC')
   const [pickedId, setPickedId] = useState('eurc-base')
-  const pickedPractice = ASSET_CATALOG.find((a) => a.id === pickedId)?.practice === true
+  const picked = ASSET_CATALOG.find((a) => a.id === pickedId) ?? ASSET_CATALOG[0]
+  const pickedPractice = picked.practice === true
   const [paying, setPaying] = useState(false)
   const [lastReceipt, setLastReceipt] = useState<Receipt | null>(null)
   const request = data.request?.status === 'pending' ? data.request : createPaymentRequest(8.4, 'EUR_STABLECOIN', () => 'demo-live-request')
   const quote = useMemo(() => calculateQuote(asset, request.amount), [asset, request.amount])
+  const anyQuote = useMemo(() => pickedPractice || picked.kind !== 'crypto' ? null : indicativeQuote(picked, request.amount, 'EURC'), [picked, pickedPractice, request.amount])
+  const payLabel = pickedPractice ? asset : assetLabel(picked)
+  const payAmount = anyQuote ? `${anyQuote.sendAmount}` : quote.totalSourceAmount.toFixed(2)
 
   const pay = () => {
-    if (data.balances[asset] < quote.totalSourceAmount) return
+    if (pickedPractice && data.balances[asset] < quote.totalSourceAmount) return
     setPaying(true)
     window.setTimeout(() => {
-      const receipt = completePayment(request, asset)
+      const receipt = completePayment(request, payLabel)
       setData({
-        balances: { ...data.balances, [asset]: Math.round((data.balances[asset] - quote.totalSourceAmount) * 100) / 100 },
+        balances: pickedPractice ? { ...data.balances, [asset]: Math.round((data.balances[asset] - quote.totalSourceAmount) * 100) / 100 } : data.balances,
         receipts: [receipt, ...data.receipts],
         request: data.request ? { ...data.request, status: 'completed' } : null,
       })
@@ -228,7 +234,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
       <h2>{paying ? 'Exchanging payment proof…' : 'Hold near the merchant device'}</h2>
       <p>{paying ? 'This stays on this device. Nothing is sent.' : 'Or tap the signal to simulate NFC.'}</p>
     </div>
-    <div className="pay-summary"><div><span>Corner Market</span><strong>{money(request.amount)}</strong></div><div><span>Paying from</span><strong>{asset} · {quote.totalSourceAmount.toFixed(2)}</strong></div></div>
+    <div className="pay-summary"><div><span>Corner Market</span><strong>{money(request.amount)}</strong></div><div><span>Paying from</span><strong>{payLabel} · {payAmount}</strong></div></div>
     <div className="demo-note"><Radio size={16} /> No NFC hardware is accessed. This interaction is simulated.</div>
     <p className="fine-print">Practice gesture. The product way to pay is a QR or pay-link on the seller’s phone — online shop, store, or market stall — not a website checkout they must host.</p>
   </FlowLayout>
@@ -236,15 +242,23 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
   if (step === 'quote') return <FlowLayout title="Review payment" onBack={() => setStep('wallet')} progress={50}>
     <div className="merchant-chip"><span className="merchant-logo">CM</span><div><small>PAYING</small><strong>Corner Market</strong></div><ShieldCheck size={19} /></div>
     <div className="amount-focus"><span>MERCHANT RECEIVES</span><h2>{money(request.amount)}</h2></div>
-    <div className="quote-card">
+    {anyQuote ? <div className="quote-card" data-testid="any-quote">
+      <div><span>You pay</span><strong>{anyQuote.sendAmount} {picked.symbol}</strong></div>
+      <div><span>Network</span><strong>{picked.network}</strong></div>
+      <div><span>Swap spread</span><strong>{anyQuote.spreadFee} {picked.symbol}</strong></div>
+      <div><span>Network fee</span><strong>{anyQuote.networkFee} {picked.symbol}</strong></div>
+      <div className="quote-total"><span>Merchant receives</span><strong>{anyQuote.payoutAmount} EURC</strong></div>
+    </div> : <div className="quote-card">
       <div><span>You pay</span><strong>{quote.totalSourceAmount.toFixed(2)} {asset}</strong></div>
       <div><span>Reference rate</span><strong>1 {asset} = {quote.rate.toFixed(2)} EUR</strong></div>
       <div><span>Conversion fee</span><strong>{quote.conversionFee.toFixed(2)} {asset}</strong></div>
       <div><span>Payment network fee</span><strong>0.00 {asset}</strong></div>
       <div className="quote-total"><span>Total</span><strong>{quote.totalSourceAmount.toFixed(2)} {asset}</strong></div>
-    </div>
+    </div>}
     <p className="rate-note"><Info size={14} /> Simulated indicative rate. Quote is fixed only for this practice screen.</p>
-    <button className="primary full" onClick={() => setStep('tap')}>Continue to tap <ArrowRight size={18} /></button>
+    {anyQuote && <p className="rate-note"><Info size={14} /> PRACTICE: {picked.symbol} is simulated here, sample rate, no balance is needed and nothing moves.</p>}
+    <button className="primary full" onClick={() => setStep('tap')}>Continue to tap (practice) <ArrowRight size={18} /></button>
+    {!pickedPractice && PAY_IN_LEGS[picked.id] && <RealSwap from={PAY_IN_LEGS[picked.id]} fromLabel={assetLabel(picked)} eurAmount={request.amount} />}
   </FlowLayout>
 
   return <FlowLayout title="My wallet" onBack={onBack} progress={25}>
@@ -257,7 +271,7 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
     <p className="fine-print">Practice sample on this device. Pay in anything you hold, including USDT on any chain and XMR via a swap route. EU merchants receive USDC, EURC, BTC, ETH, or EUR (never USDT or XMR); non-EU merchants can also receive USDT or XMR.</p>
     <AnyAssetPicker eurAmount={request.amount} payout="EURC" practiceBalances={data.balances} selectedId={pickedId} onSelect={(a) => { setPickedId(a.id); if (a.practice) setAsset(a.symbol as Asset) }} />
     <div className="incoming"><div className="incoming-pulse"><Radio size={18} /></div><div><small>PAYMENT REQUEST FOUND</small><strong>Corner Market · {money(request.amount)}</strong></div></div>
-    <button className="primary full" disabled={!pickedPractice} onClick={() => setStep('quote')}>{pickedPractice ? 'Review & pay' : 'Practice pay uses EURC or USDC'} <ChevronRight size={18} /></button>
+    <button className="primary full" disabled={picked.kind !== 'crypto'} onClick={() => setStep('quote')}>{picked.kind === 'crypto' ? 'Review & pay' : 'Card/bank via partner — coming'} <ChevronRight size={18} /></button>
     <BuyerLive />
   </FlowLayout>
 }
