@@ -70,10 +70,21 @@ export function searchAssets(query: string, catalog: CatalogAsset[] = ASSET_CATA
     .some((v) => v.toLowerCase().includes(q)))
 }
 
-/** Payout assets a merchant may choose. EU: never USDT (ESMA) or XMR (AMLR). */
-export function allowedPayouts(merchantInEu: boolean): PayoutAsset[] {
-  return merchantInEu ? ['EURC', 'USDC', 'BTC', 'ETH', 'EUR'] : ['EURC', 'USDC', 'BTC', 'ETH', 'EUR', 'USDT', 'XMR']
+/** Privacy coins EU AMLR bars at CASPs from July 2027. */
+export const PRIVACY_COINS = ['XMR', 'ZEC', 'DASH', 'FIRO', 'ARRR', 'BEAM', 'GRIN', 'DERO', 'OXEN', 'XVG', 'ZEN', 'SCRT', 'PIVX', 'NAV']
+
+/** The only payout restriction: EU merchants cannot receive USDT (ESMA) or privacy coins (AMLR). Non-EU unrestricted. */
+export function payoutAllowed(coin: string, merchantInEu: boolean): boolean {
+  if (!merchantInEu) return true
+  const c = coin.toUpperCase()
+  return c !== 'USDT' && !PRIVACY_COINS.includes(c)
 }
+
+export const euPayoutBlockReason = (coin: string) => coin.toUpperCase() === 'USDT' ? 'USDT is not an EU merchant payout (ESMA)' : 'Privacy coins are not an EU merchant payout (EU AMLR, from July 2027)'
+
+export const FIAT_PAYOUT_LABEL = 'bank payout via licensed partner — coming'
+export const FIAT_PAYOUTS: CatalogAsset[] = ['EUR', 'USD', 'GBP', 'CHF', 'NOK', 'SEK', 'DKK', 'PLN', 'CZK', 'HUF', 'SGD', 'RON', 'JPY', 'AUD', 'CAD']
+  .map((s) => ({ id: `fiat-${s.toLowerCase()}`, symbol: s, name: s, kind: 'fiat' as const, eurRate: 1, networkFee: 0 }))
 
 const PAYOUT_EUR: Record<PayoutAsset, number> = { EURC: 1, EUR: 1, USDC: 0.92, USDT: 0.92, BTC: 74000, ETH: 2170, XMR: 495 }
 
@@ -94,7 +105,7 @@ export const decimalsFor = (eurRate: number) => eurRate >= 1000 ? 8 : eurRate >=
 export function indicativeQuote(from: CatalogAsset, eurAmount: number, payout: PayoutAsset, merchantInEu = true): IndicativeQuote {
   if (from.kind !== 'crypto') throw new Error(`${from.symbol}: ${FIAT_COMING_LABEL}`)
   if (!Number.isFinite(eurAmount) || eurAmount <= 0) throw new Error('Amount must be greater than zero')
-  if (!allowedPayouts(merchantInEu).includes(payout)) throw new Error(`${payout} is not an allowed EU merchant payout`)
+  if (!payoutAllowed(payout, merchantInEu)) throw new Error(euPayoutBlockReason(payout))
   const sameAsset = from.symbol === payout
   const dp = decimalsFor(from.eurRate)
   const base = eurAmount / from.eurRate

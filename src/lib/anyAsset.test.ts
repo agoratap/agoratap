@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ASSET_CATALOG, FIAT_COMING_LABEL, allowedPayouts, indicativeQuote, searchAssets } from './anyAsset'
+import { ASSET_CATALOG, FIAT_COMING_LABEL, payoutAllowed, indicativeQuote, searchAssets } from './anyAsset'
 
 const byId = (id: string) => ASSET_CATALOG.find((a) => a.id === id)!
 
@@ -32,8 +32,11 @@ describe('indicative quote', () => {
     expect(indicativeQuote(byId('xmr'), 15, 'EURC').sendAmount).toBeGreaterThan(0.03)
   })
   it('never pays an EU merchant in USDT or XMR, but allows it outside the EU', () => {
-    expect(allowedPayouts(true)).not.toContain('USDT')
-    expect(allowedPayouts(true)).not.toContain('XMR')
+    expect(payoutAllowed('USDT', true)).toBe(false)
+    expect(payoutAllowed('XMR', true)).toBe(false)
+    expect(payoutAllowed('ZEC', true)).toBe(false)
+    for (const c of ['BTC', 'ETH', 'SOL', 'USDC', 'LTC', 'DOGE']) expect(payoutAllowed(c, true)).toBe(true)
+    expect(payoutAllowed('USDT', false) && payoutAllowed('XMR', false)).toBe(true)
     expect(() => indicativeQuote(byId('btc'), 10, 'USDT', true)).toThrow()
     expect(indicativeQuote(byId('btc'), 10, 'USDT', false).payout).toBe('USDT')
   })
