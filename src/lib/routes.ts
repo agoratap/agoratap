@@ -44,6 +44,8 @@ export interface RouteQuote {
   depositAddress?: string
   memo?: string
   expiry?: number
+  /** EVM router contract for THOR/Maya deposits (depositWithExpiry). */
+  router?: string
 }
 
 type Fetch = typeof fetch
@@ -74,8 +76,8 @@ export async function nativeQuote(route: 'thor' | 'maya', from: Leg, to: Leg, se
   const ok = sendAmount >= minIn
   return {
     route, label: ROUTE_LABEL[route], sendAmount, receiveAmount: Number(body.expected_amount_out) / 1e8, minIn, minUsd: minIn * fromUsd, ok,
-    note: ok ? 'Native swap. Your wallet must send with the memo shown; without it funds can be lost.' : `Below route minimum ${minIn}`,
-    depositAddress: body.inbound_address, memo: body.memo, expiry: body.expiry,
+    note: ok ? 'Native swap. The one-tap wallet button puts the memo in the transaction; never send a plain transfer to this address.' : `Below route minimum ${minIn}`,
+    depositAddress: body.inbound_address, memo: body.memo, expiry: body.expiry, router: body.router,
   }
 }
 
