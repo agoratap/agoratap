@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Agora Pay',
         short_name: 'Agora Pay',
-        description: 'Early pilot. Any-in → any-out. For an EU leg, preferred payout assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout.',
+        description: 'Early pilot. Any-in → any-out. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). Non-EU merchants can receive USDT.',
         theme_color: '#123b2e',
         background_color: '#f3f1e8',
         display: 'standalone',
