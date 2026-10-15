@@ -75,3 +75,4 @@
   body:has(.stall-sheet) .stall-instruction { font-size: 18pt; }
   body:has(.stall-sheet) .stall-qr { width: 110mm; height: auto; }
 }
+.any-asset{display:grid;gap:12px}.asset-search{width:100%;padding:12px 14px;border:1px solid var(--ink);border-radius:12px;font:inherit;background:transparent}.any-asset-list{max-height:340px;overflow-y:auto}.any-asset-list button:disabled{opacity:.55;cursor:not-allowed}.indicative-quote small{display:block;margin-top:8px;opacity:.75}

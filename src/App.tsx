@@ -16,6 +16,8 @@ import { createPilotSession, type PilotSession } from './lib/pilot'
 import { buildPilotSessionReport, PILOT_REPORT_DEMO_LABEL, pilotReportToCsv, pilotReportToJson } from './lib/pilotReport'
 import { LEGACY_STORAGE_KEY, STORAGE_KEY, resolveStoredRecord } from './lib/storage'
 import { beginDeviceMerchantSessionClear } from './lib/merchantSession'
+import { AnyAssetPicker } from './AnyAssetPicker'
+import { ASSET_CATALOG } from './lib/anyAsset'
 import { StallPay, StallSheet } from './StallSheet'
 import { browserPageHref, initialStallScreen, nextStallLocation, payMerchantFromLocation } from './lib/stallSheet'
 
@@ -122,7 +124,7 @@ function App() {
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
       <footer className="legal-footer">{screen === 'home'
-        ? 'Early pilot — any-in → any-out. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. Nothing to install. Not a regulated payment service.'
+        ? 'Early pilot — any-in → any-out. Pay in anything you hold, including USDT on any chain and XMR via a swap route. EU merchants receive USDC, EURC, BTC, ETH, or EUR (never USDT or XMR); non-EU merchants can also receive USDT or XMR. Nothing to install. Not a regulated payment service.'
         : 'Practice screens use simulated balances. The live matcher is one optional Base Sepolia rail. Mainnet payments are not enabled. Not a regulated payment service.'}</footer>
     </div>
   )
@@ -133,7 +135,7 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
     <section className="hero">
       <div className="eyebrow"><ShieldCheck size={15} /> EARLY PILOT · NON-CUSTODIAL</div>
       <h1>Pay with what you hold.<br /><em>They receive what they want.</em></h1>
-      <p className="hero-copy">Agora Pay is any-in → any-out. You pay in crypto you already hold. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. An online shop, a store counter, or a market stall installs nothing and shows a QR or pay-link on a phone.</p>
+      <p className="hero-copy">Agora Pay is any-in → any-out. Pay in anything you hold, including USDT on any chain and XMR via a swap route. EU merchants receive USDC, EURC, BTC, ETH, or EUR (never USDT or XMR); non-EU merchants can also receive USDT or XMR. An online shop, a store counter, or a market stall installs nothing and shows a QR or pay-link on a phone.</p>
       <div className="privacy-promise"><Fingerprint size={17} /><span><strong>No routine buyer KYC is a design target, not a legal guarantee.</strong> Agora Pay does not hold keys or funds, and it does not take a fee on the payment.</span></div>
       <div className="hero-actions">
         <button className="primary" onClick={() => onNavigate('pilot')}>Start a merchant pilot session <FlaskConical size={18} /></button>
@@ -145,19 +147,19 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
     <section className="role-panel">
       <button className="role-card buyer-card" onClick={() => onNavigate('buyer')}>
         <span className="role-number">01</span><WalletCards size={26} />
-        <div><span className="role-label">FOR PEOPLE</span><h2>Pay with crypto you already hold.</h2><p>Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. This pilot does not ask you to buy or fund Base.</p></div>
+        <div><span className="role-label">FOR PEOPLE</span><h2>Pay with crypto you already hold.</h2><p>BTC, ETH, XMR, USDT on any chain, and more. This pilot does not ask you to buy or fund Base.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
       <button className="role-card merchant-card" onClick={() => onNavigate('merchant')}>
         <span className="role-number">02</span><Store size={26} />
-        <div><span className="role-label">FOR MERCHANTS</span><h2>Online, in-store, or a market stall.</h2><p>Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. You install nothing. Show a QR or pay-link on the phone you already have.</p></div>
+        <div><span className="role-label">FOR MERCHANTS</span><h2>Online, in-store, or a market stall.</h2><p>You install nothing. Show a QR or pay-link on the phone you already have.</p></div>
         <span className="circle-arrow"><ArrowRight /></span>
       </button>
     </section>
 
     <section className="pilot-offer">
       <div><span className="section-kicker">MERCHANT PILOT</span><h2>A pay-link on a phone. Nothing to install.</h2></div>
-      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
+      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
@@ -165,7 +167,7 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
       <div className="steps">
         <article><span>1</span><div><h3>Show</h3><p>The merchant shows a QR or pay-link on a phone. Nothing to install. A website, a counter, and a market stall use the same gesture.</p></div></article>
         <article><span>2</span><div><h3>Pay</h3><p>The payer sends an asset they already hold, such as USDC, EURC, BTC, or ETH. Agora Pay does not take custody of it.</p></div></article>
-        <article><span>3</span><div><h3>Receive</h3><p>Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. The matcher in this pilot is one optional Base Sepolia check. Mainnet stays off.</p></div></article>
+        <article><span>3</span><div><h3>Receive</h3><p>EU merchants get USDC, EURC, BTC, ETH, or EUR. The matcher in this pilot is one optional Base Sepolia check. Mainnet stays off.</p></div></article>
       </div>
       <button className="text-link" onClick={() => onNavigate('architecture')}>See how the system fits together <ArrowRight size={16} /></button>
     </section>
@@ -175,6 +177,8 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
 function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoState) => void; onBack: () => void }) {
   const [step, setStep] = useState<BuyerStep>('wallet')
   const [asset, setAsset] = useState<Asset>('EURC')
+  const [pickedId, setPickedId] = useState('eurc-base')
+  const pickedPractice = ASSET_CATALOG.find((a) => a.id === pickedId)?.practice === true
   const [paying, setPaying] = useState(false)
   const [lastReceipt, setLastReceipt] = useState<Receipt | null>(null)
   const request = data.request?.status === 'pending' ? data.request : createPaymentRequest(8.4, 'EUR_STABLECOIN', () => 'demo-live-request')
@@ -250,13 +254,10 @@ function Buyer({ data, setData, onBack }: { data: DemoState; setData: (d: DemoSt
       <button onClick={() => setData({ ...data, balances: { ...data.balances, EURC: data.balances.EURC + 25 } })}><CircleDollarSign size={16} /> Add €25 practice funds</button>
     </div>
     <div className="section-row"><h3>Choose how to pay</h3><button onClick={() => setStep('privacy')}><LockKeyhole size={14} /> Privacy</button></div>
-    <p className="fine-print">Practice sample on this device. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. These two buttons are not the full asset list.</p>
-    <div className="asset-list">
-      <button className={asset === 'EURC' ? 'selected' : ''} onClick={() => setAsset('EURC')}><span className="asset-icon euro">€</span><div><strong>EURC</strong><small>Euro stablecoin</small></div><span className="asset-balance">{data.balances.EURC.toFixed(2)}<small>≈ {money(data.balances.EURC)}</small></span><span className="radio-dot" /></button>
-      <button className={asset === 'USDC' ? 'selected' : ''} onClick={() => setAsset('USDC')}><span className="asset-icon dollar">$</span><div><strong>USDC</strong><small>Dollar stablecoin</small></div><span className="asset-balance">{data.balances.USDC.toFixed(2)}<small>≈ {money(data.balances.USDC * 0.92)}</small></span><span className="radio-dot" /></button>
-    </div>
+    <p className="fine-print">Practice sample on this device. Pay in anything you hold, including USDT on any chain and XMR via a swap route. EU merchants receive USDC, EURC, BTC, ETH, or EUR (never USDT or XMR); non-EU merchants can also receive USDT or XMR.</p>
+    <AnyAssetPicker eurAmount={request.amount} payout="EURC" practiceBalances={data.balances} selectedId={pickedId} onSelect={(a) => { setPickedId(a.id); if (a.practice) setAsset(a.symbol as Asset) }} />
     <div className="incoming"><div className="incoming-pulse"><Radio size={18} /></div><div><small>PAYMENT REQUEST FOUND</small><strong>Corner Market · {money(request.amount)}</strong></div></div>
-    <button className="primary full" onClick={() => setStep('quote')}>Review & pay <ChevronRight size={18} /></button>
+    <button className="primary full" disabled={!pickedPractice} onClick={() => setStep('quote')}>{pickedPractice ? 'Review & pay' : 'Practice pay uses EURC or USDC'} <ChevronRight size={18} /></button>
     <BuyerLive />
   </FlowLayout>
 }
@@ -305,7 +306,7 @@ function Merchant({ data, setData, onBack, onStall }: { data: DemoState; setData
     <a className="secondary full stall-entry" href="#stall" onClick={(event) => { event.preventDefault(); onStall() }}><Printer size={18} /> Print market stall sheet</a>
     <label className="amount-entry"><span>AMOUNT DUE</span><div><b>€</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} aria-label="Amount due" /></div></label>
     <div className="quick-amounts">{['4.50', '8.00', '12.50', '20.00'].map((v) => <button key={v} onClick={() => setAmount(v)}>€{v}</button>)}</div>
-    <div className="settlement-title"><span>SETTLE TO</span><small>Practice sample. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported.</small></div>
+    <div className="settlement-title"><span>SETTLE TO</span><small>Practice sample. EU payout: USDC, EURC, BTC, ETH, or EUR.</small></div>
     <p className="fine-print">Online shop, offline store, or market stall. You install nothing. A buyer pays from a QR or pay-link on your phone. The live test below is the optional Base Sepolia matcher, not the whole product. You do not need to fund Base.</p>
     <div className="settlement-options">
       <button className={settlement === 'EUR_STABLECOIN' ? 'selected' : ''} onClick={() => setSettlement('EUR_STABLECOIN')}><span className="settlement-icon"><CircleDollarSign /></span><div><strong>EURC</strong><small>Euro stablecoin · practice balance</small></div><span className="radio-dot" /></button>
@@ -386,7 +387,7 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
   }
 
   return <FlowLayout title="Merchant pilot" onBack={onBack} progress={100} wide>
-    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Practice the pay-link.<br />Early pilot — no live funds.</h2><p>This screen creates a practice merchant session in this browser. It is for an online shop, a counter, or a market stall. The seller installs nothing and would show a QR or pay-link on a phone. The payer’s crypto and the merchant’s payout rail can differ: that any-in → any-out path is the product. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. This page does not run that swap. It makes no network request, does not move funds, and does not create, inspect or pay a GNU Taler order.</p></div>
+    <div className="protocol-intro"><span className="section-kicker">LOCAL READINESS WORKFLOW</span><h2>Practice the pay-link.<br />Early pilot — no live funds.</h2><p>This screen creates a practice merchant session in this browser. It is for an online shop, a counter, or a market stall. The seller installs nothing and would show a QR or pay-link on a phone. The payer’s crypto and the merchant’s payout rail can differ: that any-in → any-out path is the product. This page does not run that swap. It makes no network request, does not move funds, and does not create, inspect or pay a GNU Taler order.</p></div>
     <div className="protocol-grid">
       <section className="protocol-form">
         {!session ? <>
@@ -431,11 +432,11 @@ function MerchantPilot({ onBack }: { onBack: () => void }) {
 
 function Architecture({ onBack }: { onBack: () => void }) {
   return <FlowLayout title="System map" onBack={onBack} progress={100} wide>
-    <div className="architecture-intro"><span className="section-kicker">PRODUCT DIRECTION</span><h2>Any asset in.<br />Their rail out.</h2><p>Agora Pay is any-in → any-out. Online shops, offline stores, and market stalls use the same gesture: the seller shows a QR or pay-link on a phone and installs nothing. The payer sends crypto they already hold. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. The matcher in this early pilot is one optional rail on Base Sepolia. It is not the product, and nobody has to fund Base. Mainnet is not enabled. No routine buyer KYC remains a design target, not a guarantee of this pilot.</p></div>
+    <div className="architecture-intro"><span className="section-kicker">PRODUCT DIRECTION</span><h2>Any asset in.<br />Their rail out.</h2><p>Agora Pay is any-in → any-out. Online shops, offline stores, and market stalls use the same gesture: the seller shows a QR or pay-link on a phone and installs nothing. The payer sends crypto they already hold. The matcher in this early pilot is one optional rail on Base Sepolia. It is not the product, and nobody has to fund Base. Mainnet is not enabled. No routine buyer KYC remains a design target, not a guarantee of this pilot.</p></div>
     <div className="system-map">
-      <article><span>01</span><WalletCards /><h3>Payer</h3><p>Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. Not a new chain they must buy for this pilot.</p><small>PAYER DEVICE</small></article><i>→</i>
+      <article><span>01</span><WalletCards /><h3>Payer</h3><p>Sends any asset they hold: BTC, ETH, XMR, USDT or USDC on any chain, SOL, and more. Not a new chain they must buy for this pilot.</p><small>PAYER DEVICE</small></article><i>→</i>
       <article className="core"><span>02</span><Radio /><h3>Any-in → any-out route</h3><p>A LibertySwap / Trocador-class path turns what was paid into what the merchant asked to receive. Agora Pay does not hold keys or funds. This route is the direction; this pilot does not run a live swap.</p><small>ROUTE · NOT CUSTODY</small></article><i>→</i>
-      <article><span>03</span><Store /><h3>Merchant</h3><p>Online, at a counter, or at a stall. Shows a QR or pay-link on a phone. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. Installs nothing.</p><small>PHONE THEY ALREADY HAVE</small></article>
+      <article><span>03</span><Store /><h3>Merchant</h3><p>Online, at a counter, or at a stall. Shows a QR or pay-link on a phone. Installs nothing.</p><small>PHONE THEY ALREADY HAVE</small></article>
     </div>
     <div className="rail-map"><div><Building2 /><span><small>ONE OPTIONAL RAIL</small><strong>Base Sepolia matcher</strong></span></div><div><Landmark /><span><small>EU MERCHANT PAYOUT</small><strong>USDC, EURC, BTC, or ETH</strong></span></div></div>
     <div className="boundary-grid"><article><h3>What the product is</h3><p>Payer asset in, merchant rail out, for every kind of seller. A phone QR or pay-link, not a website checkout the merchant must host.</p></article><article><h3>What stays true</h3><p>Non-custodial. Agora Pay does not hold keys or funds. Sanctions screening stays a warning. Mainnet stays off. Privacy is not sanctions evasion.</p></article><article><h3>What this pilot shows</h3><p>Practice screens, a printable market-stall QR of the merchant pay-link, and one optional Base Sepolia share link with test tokens. The sheet does not move funds or settle every rail.</p></article></div>
