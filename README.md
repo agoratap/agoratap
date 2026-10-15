@@ -88,3 +88,7 @@ Practice-screen state stays in the browser's `localStorage`. Live sales stay in 
 ## Real swap orders (Exolix)
 
 For any crypto pay-in, the Review screen can create a real, non-custodial swap order through the keyless public Exolix API (`src/lib/exolix.ts`): live float rate, deposit address + exact amount + QR, status polling every 15 s. Destination is the merchant payout address. Payout: any asset/chain Exolix lists (searchable), amount fixed via Exolix fixed-rate reverse quote; EU merchants exclude USDT and privacy coins. Exolix lists no EURC. Agora Pay never holds funds or keys. Practice mode (no funds) works for every crypto asset.
+
+### Low-minimum routes (15 Oct 2026)
+
+Routes are quoted in parallel and ranked by lowest minimum: **direct transfer** (payer asset == payout asset, same chain: no swap, no minimum), **MAYAChain** and **THORChain** native swaps (keyless public nodes, minimums from about $1 to $24; the payer wallet must attach the memo shown), then **Exolix** (about $48 minimum, no memo). See `src/lib/routes.ts`. SideShift needs a registered affiliateId; StealthEX, LetsExchange, SimpleSwap, Swapzone and ChangeHero need API keys.
