@@ -4,7 +4,7 @@
 
 Agora Pay is an early pilot with local practice screens. Do not use it with real funds, private keys, seed phrases, identity documents, production credentials, personal data, or real merchant records. There is no backend, authorization service, encryption-at-rest layer, or regulated payment provider. The only chain contact in the app is a read-only Base Sepolia matcher. That matcher is one optional rail, not a Base-mainnet product, and mainnet is not enabled.
 
-The product is any-in → any-out: the payer sends crypto they hold, and the merchant receives on their preferred payout rail. Merchants include online shops, offline stores, and market stalls, and they install nothing. The primary experience is a QR or pay-link on a phone. This codebase does not implement that route. It also *aims* at unlinkable buyer credentials and no routine buyer KYC in-threshold, and it does not implement that security property.
+The product is any-in → any-out: the payer sends crypto they hold, and the merchant receives on their preferred payout rail. For an EU leg, preferred assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. If a payer holds USDT, that stays optional and payer-side only: Agora Pay does not route USDT to EUR. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. Merchants include online shops, offline stores, and market stalls, and they install nothing. The primary experience is a QR or pay-link on a phone. This codebase does not implement that route. It also *aims* at unlinkable buyer credentials and no routine buyer KYC in-threshold, and it does not implement that security property.
 
 ## Data handling
 

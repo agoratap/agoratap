@@ -1,6 +1,6 @@
 # Pilot onboarding
 
-Agora Pay is **any-in → any-out**. The payer sends crypto they already hold (bitcoin, USDT on Tron, or another asset a route supports). The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link on a phone they already carry, not a website checkout they must host.
+Agora Pay is **any-in → any-out**. The payer sends crypto they already hold. For an EU leg, preferred assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. If a payer holds USDT, that stays optional and payer-side only: Agora Pay does not route USDT to EUR. The merchant receives on the payout rail they prefer. See [ESMA_USDT_EU_FOLD_2026-10-11.md](ESMA_USDT_EU_FOLD_2026-10-11.md). Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link on a phone they already carry, not a website checkout they must host.
 
 Agora Pay does not hold keys or funds. Do not send real money. Mainnet stays off. Nobody has to buy or fund Base to follow this pilot.
 

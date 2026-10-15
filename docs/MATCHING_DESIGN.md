@@ -1,6 +1,6 @@
 # Matching design — decision of 2026-10-03
 
-Scope: this document is the **Base-rail matcher** (built today on Base Sepolia). It is one optional rail. It is not the Agora Pay product definition, and it is not a Base-mainnet MVP. The product is any-in → any-out: the payer sends crypto they hold, and the merchant — online shop, offline store, or market stall — receives on the payout rail they prefer, with nothing to install and a QR or pay-link on a phone. See `docs/ARCHITECTURE.md`. Nothing here enables mainnet or asks anyone to fund Base.
+Scope: this document is the **Base-rail matcher** (built today on Base Sepolia). It is one optional rail. It is not the Agora Pay product definition, and it is not a Base-mainnet MVP. The product is any-in → any-out: the payer sends crypto they hold, and the merchant — online shop, offline store, or market stall — receives on the payout rail they prefer, with nothing to install and a QR or pay-link on a phone. See `docs/ARCHITECTURE.md`. For an EU leg, preferred payout assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. Nothing here enables mainnet or asks anyone to fund Base.
 
 Status: amount-tag rules below stay in force as the secondary signal. The buyer-side reference in section 4 is now built for Base Sepolia (`src/lib/reference.ts`, wired through `confirmation.ts` and the live panels). EIP-3009 and a router contract are still not built.
 

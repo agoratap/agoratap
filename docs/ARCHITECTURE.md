@@ -4,7 +4,7 @@ Status: product definition updated 2026-10-07. The 2026-10-01 non-custodial note
 
 ## Product
 
-Agora Pay is **any-in → any-out**. The payer sends an asset they already hold (bitcoin, USDT-TRC20, or another asset a route supports). The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link the seller shows on a phone, not a website checkout the merchant must host.
+Agora Pay is **any-in → any-out**. The payer sends an asset they already hold. For an EU leg, preferred assets are USDC, EURC, BTC, and ETH. USDT is not an EU merchant payout or EU settlement rail. If a payer holds USDT, that stays optional and payer-side only: Agora Pay does not route USDT to EUR. The merchant receives on the payout rail they prefer. See [ESMA_USDT_EU_FOLD_2026-10-11.md](ESMA_USDT_EU_FOLD_2026-10-11.md). Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary experience is a QR or pay-link the seller shows on a phone, not a website checkout the merchant must host.
 
 Agora Pay does not hold keys or funds. Mainnet is not enabled in this repository. Nobody has to fund Base to use or pilot the product.
 
@@ -57,7 +57,7 @@ Honest limits: payments on a public chain are publicly linkable. The unique-amou
 
 ## Non-goals
 
-Custody, key management, Agora Pay holding a float or operating an exchange, relaying or broadcasting transactions from this app, stablecoin issuance, a buyer-KYC gate, card networks, and refunds on behalf of anyone. (Refunds are a new payment from the merchant's own wallet.) A partner-class any-in → any-out route is the product direction. It is not built here. This app still does not sign or send, and it does not ask anyone to fund Base.
+Custody, key management, Agora Pay holding a float or operating an exchange, relaying or broadcasting transactions from this app, stablecoin issuance, a USDT merchant payout or USDT→EUR settlement on an EU leg, a buyer-KYC gate, card networks, and refunds on behalf of anyone. (Refunds are a new payment from the merchant's own wallet.) A partner-class any-in → any-out route is the product direction. It is not built here. This app still does not sign or send, and it does not ask anyone to fund Base.
 
 ## Design principles
 
