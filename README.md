@@ -1,6 +1,6 @@
 # Agora Pay
 
-Agora Pay is an early pilot of **any-in → any-out** settlement. The payer sends crypto they already hold. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). Non-EU merchants can receive USDT. The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link shown on a phone, not a website checkout the merchant must host.
+Agora Pay is an early pilot of **any-in → any-out** settlement. The payer sends crypto they already hold. Payers pay in whatever they hold, including USDT on any chain (Solana, Ethereum, Tron and others). XMR (Monero) is accepted where a swap route supports it (LibertySwap / Trocador-class path). EU merchants receive USDC, EURC, BTC, ETH, or EUR; USDT is not an EU merchant payout (ESMA). EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. The merchant receives on the payout rail they prefer. Merchants are all types: online shops, offline stores, and market stalls or street sellers. The merchant installs nothing. The primary way to pay is a QR or pay-link shown on a phone, not a website checkout the merchant must host.
 
 The matcher shipped in this repository is **one optional rail** on Base Sepolia (test tokens, a read-only share link). It is not the product. Following this pilot does not require funding Base. Mainnet is not enabled. The merchant screen can print a market-stall sheet (`#stall`): a QR of that merchant’s https pay-link, the merchant name, and short Romanian and English instructions. That sheet does not move funds. Other payout rails and a live swap are still not what these screens do.
 
@@ -49,7 +49,7 @@ Run all checks: `npm ci && npm test`.
 - Screening is not wired into `chainRequest.ts`. The check field in the merchant screen is separate from the fictional demo sale, and no payer address is read from the chain (see above), so nothing checks a real payer automatically.
 - No unlinkable payments, no tokens, no GNU Taler integration. The text in the demo that mentions unlinkable payments describes a design goal that is not implemented.
 - No custody, issuance, exchange, fiat settlement or bank connection of any kind.
-- Payers can pay in USDT on any chain. No USDT payout to EU merchants; EU merchants receive USDC, EURC, BTC, ETH, or EUR. Non-EU merchants can receive USDT. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. The legal read sits outside this repository.
+- Payers can pay in USDT on any chain. No USDT payout to EU merchants; EU merchants receive USDC, EURC, BTC, ETH, or EUR. EU merchant payout is never XMR (EU AMLR bars privacy coins at CASPs from July 2027). Non-EU merchants can receive USDT, or XMR where supported. See `docs/ESMA_USDT_EU_FOLD_2026-10-11.md`. The legal read sits outside this repository.
 - No audit, no security review, no legal review. No lawyer has signed off on anything here.
 - The authors have not chosen how, or whether, this project will make money.
 
