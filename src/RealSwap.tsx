@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { QR_QUIET, qrMatrix } from './lib/qrMatrix'
 import { ORDER_DONE, ORDER_FAILED, SEED_PAYOUT_LEGS, createFixedOrder, fetchPayoutCurrencies, mergeLegs, orderStatus, orderStatusLabel, payoutAmountFor, searchLegs, usdPrice, type Leg, type PayoutLeg, type SwapOrder } from './lib/exolix'
+import { buildBtcMemoTx, buildEvmDeposit, isEvm, sendBtcUnisat, sendEvm, transferUri } from './lib/walletPay'
 import { nativeQuote, quoteAllRoutes, type RouteQuote } from './lib/routes'
 import { FIAT_PAYOUTS, FIAT_PAYOUT_LABEL, euPayoutBlockReason, payoutAllowed } from './lib/anyAsset'
 
@@ -65,16 +66,7 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
-  if (native) return <div className="real-swap" data-testid="real-order">
-    <span className="section-kicker">{native.route === 'direct' ? 'DIRECT TRANSFER · NO SWAP' : `${native.label.toUpperCase()} NATIVE SWAP · NON-CUSTODIAL`}</span>
-    <p>Send <strong>{native.sendAmount} {from.coin}</strong> on {from.network} to:</p>
-    <Qr text={native.depositAddress!} />
-    <code className="swap-address">{native.depositAddress}</code>
-    {native.memo && <p>Memo (required, exact): <code className="swap-address">{native.memo}</code></p>}
-    <p>Merchant receives {native.route === 'direct' ? 'exactly' : '≈'} <strong>{native.route === 'direct' ? native.receiveAmount : native.receiveAmount.toFixed(6)} {payout.coin}</strong> at <code>{address}</code></p>
-    {native.expiry && <p className="fine-print">Quote expires {new Date(native.expiry * 1000).toLocaleTimeString()}. Do not send after expiry.</p>}
-    <p className="fine-print">{native.note} Agora Pay never holds funds or keys.</p>
-  </div>
+  if (native) return <NativePay native={native} from={from} payout={payout} address={address} />
 
   if (order) return <div className="real-swap" data-testid="real-order">
     <span className="section-kicker">REAL SWAP ORDER · EXOLIX · NON-CUSTODIAL</span>
@@ -111,5 +103,39 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
     {error && <p className="fine-print" role="alert">{error}</p>}
     <label>Merchant payout address<input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${payout.label} address`} /></label>
     <button className="secondary full" disabled={busy || !chosen || blocked || !address.trim()} onClick={create}>{busy ? 'Creating order…' : chosen?.route === 'direct' ? 'Show payment details' : 'Create real swap order'}</button>
+  </div>
+}
+
+function NativePay({ native, from, payout, address }: { native: RouteQuote; from: Leg; payout: PayoutLeg; address: string }) {
+  const [status, setStatus] = useState('')
+  const direct = native.route === 'direct'
+  const uri = direct ? transferUri(from, native.depositAddress!, native.sendAmount) : null
+  let evm: ReturnType<typeof buildEvmDeposit> | null = null, btc: ReturnType<typeof buildBtcMemoTx> | null = null, buildError = ''
+  if (!direct) {
+    try {
+      if (isEvm(from)) evm = buildEvmDeposit(from, native)
+      else if (from.coin === 'BTC' && from.network === 'BTC') btc = buildBtcMemoTx(native)
+    } catch (e) { buildError = (e as Error).message }
+  }
+  const run = async (fn: () => Promise<unknown>) => { setStatus('Waiting for your wallet…'); try { setStatus(`Sent: ${JSON.stringify(await fn())}`) } catch (e) { setStatus((e as Error).message) } }
+  return <div className="real-swap" data-testid="real-order">
+    <span className="section-kicker">{direct ? 'DIRECT TRANSFER · NO SWAP' : `${native.label.toUpperCase()} NATIVE SWAP · NON-CUSTODIAL`}</span>
+    <p>Pay <strong>{native.sendAmount} {from.coin}</strong> on {from.network}. Merchant receives {direct ? 'exactly' : '≈'} <strong>{direct ? native.receiveAmount : native.receiveAmount.toFixed(6)} {payout.coin}</strong> at <code>{address}</code></p>
+    {direct && uri && <><Qr text={uri} /><code className="swap-address" data-testid="pay-uri">{uri}</code><p className="fine-print">Scan with any wallet: amount and recipient are filled in for you.</p></>}
+    {direct && !uri && <><Qr text={native.depositAddress!} /><code className="swap-address">{native.depositAddress}</code></>}
+    {evm && <div data-testid="evm-tx">
+      <button className="primary full" onClick={() => run(() => sendEvm(evm!))}>Pay with browser wallet (memo included)</button>
+      <p className="fine-print">One tap in MetaMask, Rabby, Coinbase Wallet or another injected wallet. {evm.length === 2 ? 'Two approvals: allow the token, then deposit.' : 'One approval.'} The memo is inside the transaction; you type nothing.</p>
+      <details><summary>Transaction preview</summary>{evm.map((t, i) => <pre key={i} className="swap-address">{`${t.label}\nchain ${t.chainId} · to ${t.to} · value ${t.value}\ndata ${t.data}`}</pre>)}</details>
+    </div>}
+    {btc && <div data-testid="btc-tx">
+      <button className="primary full" onClick={() => run(() => sendBtcUnisat(btc!))}>Pay with UniSat (memo included)</button>
+      <p className="fine-print">UniSat writes the memo as OP_RETURN for you. Plain QR codes (BIP21) cannot carry it, so no QR is shown for this route.</p>
+      <details><summary>Transaction preview</summary><pre className="swap-address">{`to ${btc.to}\nsats ${btc.sats}\nOP_RETURN ${btc.memo}`}</pre></details>
+    </div>}
+    {!direct && !evm && !btc && <p className="fine-print" role="alert">{buildError || `No one-tap wallet for ${from.coin} on ${from.network} yet. Use a wallet that supports memos, or pick another route.`} Memo: <code className="swap-address">{native.memo}</code> to <code className="swap-address">{native.depositAddress}</code></p>}
+    {native.expiry && <p className="fine-print">Quote expires {new Date(native.expiry * 1000).toLocaleTimeString()}. Do not send after expiry.</p>}
+    {status && <p className="fine-print" role="status">{status}</p>}
+    <p className="fine-print">{native.note} Agora Pay never holds funds or keys.</p>
   </div>
 }
