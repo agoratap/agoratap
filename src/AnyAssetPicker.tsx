@@ -33,7 +33,7 @@ export function AnyAssetPicker({ eurAmount, payout, practiceBalances, selectedId
       <div><span>Merchant receives</span><strong>{quote.payoutAmount} {quote.payout}</strong></div>
       <div><span>Swap spread</span><strong>{quote.spreadFee} {quote.from.symbol}</strong></div>
       <div><span>Network fee</span><strong>{quote.networkFee} {quote.from.symbol}</strong></div>
-      <small>{INDICATIVE_LABEL}{selected?.practice ? '' : '. Practice payment runs with EURC or USDC on Base.'}</small>
+      <small>{INDICATIVE_LABEL}. Review & pay runs a practice payment; a real swap order is offered on the next screen.</small>
     </div>}
   </div>
 }

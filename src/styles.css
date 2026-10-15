@@ -76,3 +76,4 @@
   body:has(.stall-sheet) .stall-qr { width: 110mm; height: auto; }
 }
 .any-asset{display:grid;gap:12px}.asset-search{width:100%;padding:12px 14px;border:1px solid var(--ink);border-radius:12px;font:inherit;background:transparent}.any-asset-list{max-height:340px;overflow-y:auto}.any-asset-list button:disabled{opacity:.55;cursor:not-allowed}.indicative-quote small{display:block;margin-top:8px;opacity:.75}
+.real-swap{display:grid;gap:10px;margin-top:18px;padding:16px;border:1px solid var(--ink);border-radius:14px}.real-swap label{display:grid;gap:4px;font-size:13px}.real-swap label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px}.real-swap input:not([type=checkbox]),.real-swap select{padding:10px;border:1px solid var(--ink);border-radius:10px;font:inherit;background:transparent}.swap-address{word-break:break-all;font-size:12px}.swap-qr{justify-self:center}

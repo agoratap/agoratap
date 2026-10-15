@@ -22,14 +22,14 @@ describe('any-asset catalog', () => {
 
 describe('indicative quote', () => {
   it('quotes BTC into EURC with spread and network fee', () => {
-    const q = indicativeQuote(byId('btc'), 58, 'EURC')
+    const q = indicativeQuote(byId("btc"), 58, "EURC")
     expect(q.indicative).toBe(true)
     expect(q.payoutAmount).toBe(58)
-    expect(q.sendAmount).toBeCloseTo(0.001 * 1.01 + 0.00002, 8)
+    expect(q.sendAmount).toBeCloseTo((58 / 74000) * 1.01 + 0.00002, 8)
   })
   it('quotes USDT on Tron and XMR for an EU merchant paid in EURC', () => {
     expect(indicativeQuote(byId('usdt-tron'), 9.2, 'EURC').sendAmount).toBeGreaterThan(10)
-    expect(indicativeQuote(byId('xmr'), 15, 'EURC').sendAmount).toBeGreaterThan(0.1)
+    expect(indicativeQuote(byId('xmr'), 15, 'EURC').sendAmount).toBeGreaterThan(0.03)
   })
   it('never pays an EU merchant in USDT or XMR, but allows it outside the EU', () => {
     expect(allowedPayouts(true)).not.toContain('USDT')

@@ -84,3 +84,7 @@ Practice-screen state stays in the browser's `localStorage`. Live sales stay in 
 - [docs/REGULATORY_BOUNDARIES.md](docs/REGULATORY_BOUNDARIES.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): current design notes (rewritten for the non-custodial model; still working documents, not statements of legal position).
 - [docs/ESMA_USDT_EU_FOLD_2026-10-11.md](docs/ESMA_USDT_EU_FOLD_2026-10-11.md): Pay-in includes USDT on any chain; EU merchant payout is USDC, EURC, BTC, ETH, or EUR; non-EU merchants can receive USDT. Product copy only; Tom Hagen owns the legal read.
 - [SECURITY.md](SECURITY.md)
+
+## Real swap orders (Exolix)
+
+For any crypto pay-in, the Review screen can create a real, non-custodial swap order through the keyless public Exolix API (`src/lib/exolix.ts`): live float rate, deposit address + exact amount + QR, status polling every 15 s. Destination is the merchant payout address. EU merchant payout: USDC (Base/Ethereum), BTC, ETH — never USDT or XMR; non-EU may also take USDT (Tron) or XMR. Exolix lists no EURC. Agora Pay never holds funds or keys. Practice mode (no funds) works for every crypto asset.
