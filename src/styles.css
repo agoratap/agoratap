@@ -40,3 +40,38 @@
 .compact-entry { display: block; margin: 8px 0; text-align: left; }
 .compact-entry span { display: block; font: 500 9px DM Mono, monospace; letter-spacing: 1px; margin-bottom: 6px; }
 .compact-entry input { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid var(--line); background: #fff; padding: 8px; }
+
+.stall-entry { margin: 14px 0 8px; text-decoration: none; }
+.stall-page { width: min(100%, 640px); margin: 0 auto; padding: 8px 22px 40px; }
+.stall-controls { margin-bottom: 28px; }
+.stall-controls h2 { font-size: 32px; letter-spacing: -1.2px; line-height: 1.05; margin: 8px 0 12px; }
+.stall-controls > p { color: var(--muted); font-size: 14px; line-height: 1.55; }
+.stall-controls label { display: block; font: 500 9px DM Mono, monospace; letter-spacing: 1px; margin: 18px 0 8px; }
+.stall-controls input { width: 100%; min-height: 52px; border: 1px solid var(--line); background: #fff; padding: 0 14px; border-radius: 3px; color: var(--ink); font-size: 18px; }
+.stall-controls form .primary { margin-top: 16px; }
+.stall-sheet { background: #fff; color: #111; text-align: center; padding: 28px 22px 32px; border: 1px solid var(--ink); }
+.stall-kicker { font: 500 11px DM Mono, monospace; letter-spacing: 1.6px; margin: 0 0 8px; }
+.stall-sheet h1 { font-size: clamp(36px, 6vw, 52px); letter-spacing: -1.6px; line-height: 1.05; margin: 0 0 8px; min-height: 1.05em; }
+.stall-qr { width: min(92vw, 420px); height: auto; display: block; margin: 8px auto 16px; }
+.stall-instruction { font-size: 22px; font-weight: 700; line-height: 1.25; margin: 8px auto; max-width: 520px; }
+.stall-route, .stall-assets { font-size: 15px; line-height: 1.45; margin: 10px auto; max-width: 460px; }
+.stall-assets { font-weight: 700; letter-spacing: .3px; }
+.stall-base, .stall-pilot, .stall-link { font-size: 12px; line-height: 1.45; color: #333; margin: 8px auto; max-width: 460px; }
+.stall-link { overflow-wrap: anywhere; font-family: DM Mono, ui-monospace, monospace; font-size: 10px; }
+.stall-placeholder { color: var(--muted); font-size: 14px; margin: 28px auto; max-width: 360px; }
+.stall-error { color: #7d2b18; background: #ffe2d9; padding: 10px 12px; font-size: 12px; margin: 12px 0 0; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body:has(.stall-sheet) { background: #fff; }
+  body:has(.stall-sheet) .app-shell { overflow: visible; background: #fff; min-height: 0; }
+  body:has(.stall-sheet) .ambient,
+  body:has(.stall-sheet) .topbar,
+  body:has(.stall-sheet) .legal-footer,
+  body:has(.stall-sheet) .stall-controls { display: none !important; }
+  body:has(.stall-sheet) .stall-page { width: auto; max-width: none; padding: 0; margin: 0; }
+  body:has(.stall-sheet) .stall-sheet { border: 0; box-shadow: none; width: auto; max-width: none; break-inside: avoid; page-break-inside: avoid; padding: 0; }
+  body:has(.stall-sheet) .stall-sheet h1 { font-size: 28pt; }
+  body:has(.stall-sheet) .stall-instruction { font-size: 18pt; }
+  body:has(.stall-sheet) .stall-qr { width: 110mm; height: auto; }
+}

@@ -4,7 +4,7 @@ Agora Pay is **any-in → any-out**. The payer sends crypto they already hold. F
 
 Agora Pay does not hold keys or funds. Do not send real money. Mainnet stays off. Nobody has to buy or fund Base to follow this pilot.
 
-The steps below are the **optional Base Sepolia matcher** already in this app: a share link, test tokens, read-only. That matcher is one rail, not the product. Skip it if you do not have test tokens. The steps match the merchant and buyer **live test** panels and `docs/MATCHING_DESIGN.md` section 5. A phone QR and a live swap onto the merchant’s payout rail are the product direction; this walkthrough does not do either.
+The steps below are the **optional Base Sepolia matcher** already in this app: a share link, test tokens, read-only. That matcher is one rail, not the product. Skip it if you do not have test tokens. The steps match the merchant and buyer **live test** panels and `docs/MATCHING_DESIGN.md` section 5. The merchant screen can also print a market-stall sheet (`#stall`) with a QR of an https pay-link. That sheet does not move funds. A live swap onto the merchant’s payout rail is still the product direction; this walkthrough does not do that swap.
 
 ## Before you start
 
