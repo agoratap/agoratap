@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { QR_QUIET, qrMatrix } from './lib/qrMatrix'
-import { ORDER_DONE, ORDER_FAILED, createOrder, liveRate, orderStatus, orderStatusLabel, payoutLegsFor, sendAmountFor, type Leg, type SwapOrder } from './lib/exolix'
+import { ORDER_DONE, ORDER_FAILED, SEED_PAYOUT_LEGS, createFixedOrder, fetchPayoutCurrencies, fixedQuote, mergeLegs, orderStatus, orderStatusLabel, payoutAmountFor, searchLegs, usdPrice, type FixedQuote, type Leg, type PayoutLeg, type SwapOrder } from './lib/exolix'
+import { FIAT_PAYOUTS, FIAT_PAYOUT_LABEL, euPayoutBlockReason, payoutAllowed } from './lib/anyAsset'
 
 function Qr({ text }: { text: string }) {
   const m = useMemo(() => qrMatrix(text), [text])
@@ -13,24 +14,32 @@ function Qr({ text }: { text: string }) {
 /** Real non-custodial swap order through Exolix. Agora Pay never holds funds. */
 export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel: string; eurAmount: number }) {
   const [merchantInEu, setMerchantInEu] = useState(true)
-  const legs = payoutLegsFor(merchantInEu)
-  const [payoutId, setPayoutId] = useState('usdc-base')
-  const payout = legs.find((l) => l.id === payoutId) ?? legs[0]
+  const [allLegs, setAllLegs] = useState<PayoutLeg[]>(SEED_PAYOUT_LEGS)
+  const [query, setQuery] = useState('')
+  const [payout, setPayout] = useState<PayoutLeg>(SEED_PAYOUT_LEGS[0])
+  const [eur, setEur] = useState(String(eurAmount))
   const [address, setAddress] = useState('')
-  const [rate, setRate] = useState<number | null>(null)
-  const [min, setMin] = useState(0)
+  const [quote, setQuote] = useState<{ receive: number; q: FixedQuote } | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [order, setOrder] = useState<SwapOrder | null>(null)
-  // USDC/USDT payout amount from EUR uses a reference 1 EUR ≈ 1.087 USD; BTC/ETH/XMR payouts priced via the live route.
-  const payoutAmount = payout.coin === 'USDC' || payout.coin === 'USDT' ? Math.round(eurAmount * 1.087 * 100) / 100 : null
+  const eurNum = Number(eur)
+
+  useEffect(() => { fetchPayoutCurrencies().then((l) => setAllLegs(mergeLegs(SEED_PAYOUT_LEGS, l))).catch(() => {}) }, [])
+  const blocked = merchantInEu && !payoutAllowed(payout.coin, true)
+  const shown = useMemo(() => searchLegs(allLegs, query).slice(0, 60), [allLegs, query])
+  const fiat = useMemo(() => FIAT_PAYOUTS.filter((p) => !query.trim() || p.symbol.toLowerCase().includes(query.trim().toLowerCase())), [query])
 
   useEffect(() => {
     let live = true
-    setRate(null); setError('')
-    liveRate(from, payout).then((r) => { if (live) { setRate(r.rate); setMin(r.minAmount) } }).catch((e) => { if (live) setError(`No live route for ${fromLabel} → ${payout.label}: ${e.message}`) })
+    setQuote(null); setError('')
+    if (blocked || !(eurNum > 0)) return
+    usdPrice(payout)
+      .then((price) => { const receive = payoutAmountFor(eurNum, price); return fixedQuote(from, payout, receive).then((q) => ({ receive, q })) })
+      .then((r) => { if (live) setQuote(r) })
+      .catch((e) => { if (live) setError(`No live route for ${fromLabel} → ${payout.label}: ${e.message}`) })
     return () => { live = false }
-  }, [from.coin, from.network, payout.coin, payout.network])
+  }, [from.coin, from.network, payout.id, eurNum, blocked])
 
   useEffect(() => {
     if (!order || ORDER_DONE.includes(order.status) || ORDER_FAILED.includes(order.status)) return
@@ -38,14 +47,10 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
     return () => window.clearInterval(t)
   }, [order?.id, order?.status])
 
-  const send = rate && payoutAmount ? sendAmountFor(payoutAmount, rate) : null
-
-  const belowMin = send != null && send < min
-
   const create = async () => {
-    if (!send) return
+    if (!quote) return
     setBusy(true); setError('')
-    try { setOrder(await createOrder(from, payout, send, address)) } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
+    try { setOrder(await createFixedOrder(from, payout, quote.receive, address)) } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
   if (order) return <div className="real-swap" data-testid="real-order">
@@ -54,20 +59,30 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
     <Qr text={order.depositAddress} />
     <code className="swap-address">{order.depositAddress}</code>
     {order.depositExtraId && <p>Memo / tag: <code>{order.depositExtraId}</code></p>}
-    <p>Merchant receives ≈ <strong>{order.amountTo} {order.coinTo}</strong> at <code>{order.withdrawalAddress}</code></p>
+    <p>Merchant receives <strong>{order.amountTo} {order.coinTo}</strong> at <code>{order.withdrawalAddress}</code></p>
     <p>Status: <strong>{orderStatusLabel(order.status)}</strong> · order {order.id} · checks every 15 s</p>
     <p className="fine-print">Real money if you send it. Agora Pay never holds funds or keys; Exolix runs the swap and pays the merchant address.</p>
   </div>
 
   return <div className="real-swap">
     <span className="section-kicker">PAY FOR REAL · LIVE SWAP</span>
-    <label><input type="checkbox" checked={merchantInEu} onChange={(e) => setMerchantInEu(e.target.checked)} /> Merchant is in the EU (payout never USDT or XMR)</label>
-    <label>Merchant payout<select value={payout.id} onChange={(e) => setPayoutId(e.target.value)}>{legs.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}</select></label>
-    <label>Merchant payout address<input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${payout.label} address`} /></label>
-    {rate != null && <p>Live rate: 1 {from.coin} ≈ {rate} {payout.coin}{send ? <> · you send ≈ <strong>{send} {from.coin}</strong> for {payoutAmount} {payout.coin}</> : ' · BTC/ETH payout: the order uses the live float amount'}</p>}
-    {!payoutAmount && <p className="fine-print">For a BTC or ETH payout, pick USDC to fix the merchant amount; crypto payouts float.</p>}
-    {belowMin && <p className="fine-print" role="alert">Below this route's minimum of {min} {from.coin}. The swap partner will not accept an order this small; pick another asset or a larger amount.</p>}
+    <label><input type="checkbox" checked={merchantInEu} onChange={(e) => setMerchantInEu(e.target.checked)} /> Merchant is in the EU (excludes only USDT and privacy coins)</label>
+    <label>Amount (EUR)<input inputMode="decimal" aria-label="Real amount in EUR" value={eur} onChange={(e) => setEur(e.target.value.replace(/[^0-9.]/g, ''))} /></label>
+    <label>Merchant receives — search any asset or chain<input type="search" aria-label="Search payout asset" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="BTC, USDC Solana, LTC, EUR…" /></label>
+    <div className="asset-list payout-list" role="listbox" aria-label="Merchant payout">
+      {shown.map((l) => {
+        const no = merchantInEu && !payoutAllowed(l.coin, true)
+        return <button key={l.id} role="option" aria-selected={l.id === payout.id} disabled={no} title={no ? euPayoutBlockReason(l.coin) : ''} className={l.id === payout.id ? 'selected' : ''} onClick={() => setPayout(l)}>
+          <div><strong>{l.label}</strong><small>{no ? `EU: ${euPayoutBlockReason(l.coin)}` : l.name}</small></div><span className="radio-dot" />
+        </button>
+      })}
+      {fiat.map((p) => <button key={p.id} disabled role="option" aria-selected={false}><div><strong>{p.symbol}</strong><small>{FIAT_PAYOUT_LABEL}</small></div></button>)}
+    </div>
+    <p>Payout: <strong data-testid="payout-picked">{payout.label}</strong>{blocked && ` — ${euPayoutBlockReason(payout.coin)}`}</p>
+    {quote && <p data-testid="real-quote">Live fixed quote: send <strong>{quote.q.fromAmount} {from.coin}</strong> → merchant receives exactly <strong>{quote.receive} {payout.coin}</strong></p>}
+    {quote?.q.belowMin && <p className="fine-print" role="alert">Below this route's minimum ({quote.q.minAmount} {from.coin} in, {quote.q.withdrawMin} {payout.coin} out). Raise the amount.</p>}
     {error && <p className="fine-print" role="alert">{error}</p>}
-    <button className="secondary full" disabled={busy || !send || belowMin || !address.trim()} onClick={create}>{busy ? 'Creating order…' : 'Create real swap order'}</button>
+    <label>Merchant payout address<input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${payout.label} address`} /></label>
+    <button className="secondary full" disabled={busy || !quote || quote.q.belowMin || blocked || !address.trim()} onClick={create}>{busy ? 'Creating order…' : 'Create real swap order'}</button>
   </div>
 }
