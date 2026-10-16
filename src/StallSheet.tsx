@@ -1,3 +1,4 @@
+import { connectWalletConnect, WALLETCONNECT_PROJECT_ID } from './lib/walletConnect'
 import { useMemo, useState, type ReactElement } from 'react'
 import { QR_QUIET, qrMatrix, type QrMatrix } from './lib/qrMatrix'
 import {
@@ -77,6 +78,24 @@ export function StallSheet({ pageHref, initialName = '', onBack }: { pageHref: s
   </div>
 }
 
+function WalletConnectButton() {
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function onClick() {
+    setBusy(true); setStatus('')
+    try {
+      const accounts = await connectWalletConnect()
+      setStatus(accounts[0] ? `Connected ${accounts[0].slice(0, 6)}…${accounts[0].slice(-4)}` : 'Connected')
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'Connection closed')
+    } finally { setBusy(false) }
+  }
+  return <div className="stall-controls">
+    <button type="button" className="primary" onClick={onClick} disabled={busy} data-wc-project={WALLETCONNECT_PROJECT_ID}>{busy ? 'Opening wallet…' : 'Connect wallet'}</button>
+    {status && <p className="fine-print" role="status">{status}</p>}
+  </div>
+}
+
 export function StallPay({ merchantName, onBack }: { merchantName: string; onBack: () => void }) {
   let name = ''
   let problem = ''
@@ -92,5 +111,6 @@ export function StallPay({ merchantName, onBack }: { merchantName: string; onBac
     <article className="stall-sheet" aria-label="Merchant pay-link">
       {problem ? <p className="stall-error" role="alert">{problem}</p> : <SheetCopy name={name} />}
     </article>
+    {!problem && <WalletConnectButton />}
   </div>
 }
