@@ -5,7 +5,9 @@
  *  - thor:    THORChain native swap (public Liquify thornode gateway). Low minimums; payer wallet must attach the memo.
  *  - exolix:  custodial-swap service with deposit address (no memo), minimum ~ $48 per order.
  * Routes are tried in parallel and ordered by lowest minimum (USD).
+ * EU merchants: only `direct` is executable. MAYA, THOR and Exolix stay listed as not available and are not requested.
  */
+import { EU_SWAP_NOT_AVAILABLE, assertEuRealSwapAllowed } from './anyAsset'
 import { fixedQuote, liveRate, type Leg } from './exolix'
 
 export type RouteId = 'direct' | 'maya' | 'thor' | 'exolix'
@@ -57,8 +59,9 @@ export function directQuote(from: Leg, to: Leg, receive: number, destination = '
   return { route: 'direct', label: ROUTE_LABEL.direct, sendAmount: receive, receiveAmount: receive, minIn: 0, minUsd: 0, ok: true, note: 'Same asset and chain: pay the merchant address directly. No swap, no minimum, no middleman.', depositAddress: destination || undefined }
 }
 
-/** THOR/Maya quote. Forward: `sendAmount` of the pay-in asset. Amounts use 1e8 base units on both chains. */
-export async function nativeQuote(route: 'thor' | 'maya', from: Leg, to: Leg, sendAmount: number, fromUsd: number, destination = '', f: Fetch = fetch): Promise<RouteQuote | null> {
+/** THOR/Maya quote. Forward: `sendAmount` of the pay-in asset. Amounts use 1e8 base units on both chains. Refused for an EU merchant before the node is called. `merchantInEu` defaults to true (fail closed). */
+export async function nativeQuote(route: 'thor' | 'maya', from: Leg, to: Leg, sendAmount: number, fromUsd: number, destination = '', f: Fetch = fetch, merchantInEu = true): Promise<RouteQuote | null> {
+  assertEuRealSwapAllowed(merchantInEu, to.coin)
   const table = route === 'thor' ? THOR_ASSETS : MAYA_ASSETS
   const a = table[key(from)], b = table[key(to)]
   if (!a || !b || a === b) return null
@@ -94,17 +97,25 @@ export async function exolixQuote(from: Leg, to: Leg, receive: number, fromUsd: 
 export const rankRoutes = (qs: (RouteQuote | null)[]) => (qs.filter(Boolean) as RouteQuote[])
   .sort((x, y) => Number(y.ok) - Number(x.ok) || x.minUsd - y.minUsd)
 
-export interface QuoteInput { from: Leg; to: Leg; receive: number; fromUsd: number; toUsd: number; destination?: string }
+const SWAP_ROUTE_IDS = ['maya', 'thor', 'exolix'] as const
 
-/** All routes for one payment, ranked. `receive` is the payout amount the merchant should get. */
-export async function quoteAllRoutes({ from, to, receive, fromUsd, toUsd, destination = '' }: QuoteInput, f: Fetch = fetch): Promise<RouteQuote[]> {
+/** Visible, not payable. No provider is contacted. */
+function euHeldRoute(route: typeof SWAP_ROUTE_IDS[number]): RouteQuote {
+  return { route, label: ROUTE_LABEL[route], sendAmount: 0, receiveAmount: 0, minIn: Infinity, minUsd: Infinity, ok: false, note: EU_SWAP_NOT_AVAILABLE }
+}
+
+export interface QuoteInput { from: Leg; to: Leg; receive: number; fromUsd: number; toUsd: number; destination?: string; merchantInEu?: boolean }
+
+/** All routes for one payment, ranked. `receive` is the payout amount the merchant should get. EU merchants get direct transfer only; swap routes are listed and not requested. `merchantInEu` defaults to true (fail closed). */
+export async function quoteAllRoutes({ from, to, receive, fromUsd, toUsd, destination = '', merchantInEu = true }: QuoteInput, f: Fetch = fetch): Promise<RouteQuote[]> {
   const direct = directQuote(from, to, receive, destination)
+  if (merchantInEu) return direct ? [direct, ...SWAP_ROUTE_IDS.map(euHeldRoute)] : SWAP_ROUTE_IDS.map(euHeldRoute)
   if (direct) return [direct]
   // Native swaps are forward-quoted: size the input from USD prices plus a 3% fee buffer.
   const sendEst = Math.ceil((receive * toUsd / fromUsd) * 1.03 * 1e8) / 1e8
   const settled = await Promise.allSettled([
-    nativeQuote('maya', from, to, sendEst, fromUsd, destination, f),
-    nativeQuote('thor', from, to, sendEst, fromUsd, destination, f),
+    nativeQuote('maya', from, to, sendEst, fromUsd, destination, f, false),
+    nativeQuote('thor', from, to, sendEst, fromUsd, destination, f, false),
     exolixQuote(from, to, receive, fromUsd, f),
   ])
   return rankRoutes(settled.map((s) => s.status === 'fulfilled' ? s.value : null))

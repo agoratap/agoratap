@@ -73,7 +73,7 @@ export function searchAssets(query: string, catalog: CatalogAsset[] = ASSET_CATA
 /** Privacy coins EU AMLR bars at CASPs from July 2027. */
 export const PRIVACY_COINS = ['XMR', 'ZEC', 'DASH', 'FIRO', 'ARRR', 'BEAM', 'GRIN', 'DERO', 'OXEN', 'XVG', 'ZEN', 'SCRT', 'PIVX', 'NAV']
 
-/** The only payout restriction: EU merchants cannot receive USDT (ESMA) or privacy coins (AMLR). Non-EU unrestricted. */
+/** EU merchant payout: not USDT (ESMA) and not a privacy coin (AMLR). Real swaps are refused separately. Non-EU merchants: subject to local law and sanctions. */
 export function payoutAllowed(coin: string, merchantInEu: boolean): boolean {
   if (!merchantInEu) return true
   const c = coin.toUpperCase()
@@ -81,6 +81,30 @@ export function payoutAllowed(coin: string, merchantInEu: boolean): boolean {
 }
 
 export const euPayoutBlockReason = (coin: string) => coin.toUpperCase() === 'USDT' ? 'USDT is not an EU merchant payout (ESMA)' : 'Privacy coins are not an EU merchant payout (EU AMLR, from July 2027)'
+
+/** Shown on swap routes that stay visible but cannot be paid for an EU merchant. */
+export const EU_SWAP_NOT_AVAILABLE = 'not available for EU yet'
+
+/** Honest hold copy when the payer's asset would need a real swap to reach an EU merchant. */
+export function euSwapComingMessage(merchantAsset: string): string {
+  return `Swap for EU merchants via a MiCA-authorised partner — coming. Pay directly in ${merchantAsset} or use practice mode.`
+}
+
+/** Thrown when code tries to place a real Exolix order or a MAYA/THOR route for an EU merchant. No provider call should follow. */
+export class EuRealSwapBlocked extends Error {
+  constructor(merchantAsset: string) {
+    super(euSwapComingMessage(merchantAsset))
+    this.name = 'EuRealSwapBlocked'
+  }
+}
+
+/**
+ * Fail closed. A real swap (Exolix order, MAYAChain route, THORChain route) is refused for an EU merchant
+ * before any provider request. Pass false only for a merchant outside the EU. Direct transfer and practice mode are not swaps.
+ */
+export function assertEuRealSwapAllowed(merchantInEu: boolean, merchantAsset: string): void {
+  if (merchantInEu) throw new EuRealSwapBlocked(merchantAsset)
+}
 
 export const FIAT_PAYOUT_LABEL = 'bank payout via licensed partner — coming'
 export const FIAT_PAYOUTS: CatalogAsset[] = ['EUR', 'USD', 'GBP', 'CHF', 'NOK', 'SEK', 'DKK', 'PLN', 'CZK', 'HUF', 'SGD', 'RON', 'JPY', 'AUD', 'CAD']

@@ -3,7 +3,10 @@
  * Keyless: rate, create-transaction and status endpoints work without an account,
  * and the API answers CORS for this origin. Agora Pay never holds funds or keys:
  * the payer sends to Exolix's deposit address, Exolix pays the merchant's address.
+ * EU merchants: createOrder and createFixedOrder refuse before any request. Exolix is not a MiCA-authorised route for them.
  */
+import { assertEuRealSwapAllowed } from './anyAsset'
+
 export const EXOLIX_API = 'https://exolix.com/api/v2'
 
 export interface Leg { coin: string; network: string }
@@ -135,8 +138,9 @@ export async function fixedQuote(from: Leg, to: Leg, withdrawalAmount: number, f
   return { fromAmount, toAmount: withdrawalAmount, minAmount, withdrawMin, belowMin: fromAmount < minAmount || withdrawalAmount < withdrawMin }
 }
 
-/** Fixed-rate order: the merchant receives exactly `withdrawalAmount` of `to`. */
-export async function createFixedOrder(from: Leg, to: Leg, withdrawalAmount: number, withdrawalAddress: string, f: Fetch = fetch): Promise<SwapOrder> {
+/** Fixed-rate order: the merchant receives exactly `withdrawalAmount` of `to`. Refused for an EU merchant before the request. `merchantInEu` defaults to true (fail closed). */
+export async function createFixedOrder(from: Leg, to: Leg, withdrawalAmount: number, withdrawalAddress: string, f: Fetch = fetch, merchantInEu = true): Promise<SwapOrder> {
+  assertEuRealSwapAllowed(merchantInEu, to.coin)
   if (!withdrawalAddress.trim()) throw new Error('Merchant payout address is required')
   const res = await f(`${EXOLIX_API}/transactions`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -147,7 +151,9 @@ export async function createFixedOrder(from: Leg, to: Leg, withdrawalAmount: num
   return toOrder(body)
 }
 
-export async function createOrder(from: Leg, to: Leg, amount: number, withdrawalAddress: string, f: Fetch = fetch): Promise<SwapOrder> {
+/** Float order. Refused for an EU merchant before the request. `merchantInEu` defaults to true (fail closed). */
+export async function createOrder(from: Leg, to: Leg, amount: number, withdrawalAddress: string, f: Fetch = fetch, merchantInEu = true): Promise<SwapOrder> {
+  assertEuRealSwapAllowed(merchantInEu, to.coin)
   if (!withdrawalAddress.trim()) throw new Error('Merchant payout address is required')
   const res = await f(`${EXOLIX_API}/transactions`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
