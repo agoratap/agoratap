@@ -34,7 +34,7 @@ describe('exolix swap adapter', () => {
   })
   it('creates a fixed order so the merchant receives an exact amount', async () => {
     const f = vi.fn(() => json({ id: 'fx', depositAddress: 'bc1dep', amount: 0.0008, coinFrom: { coinCode: 'BTC', network: 'BTC' }, amountTo: 60, coinTo: { coinCode: 'USDC' }, withdrawalAddress: 'So1', status: 'wait' }))
-    await createFixedOrder(PAY_IN_LEGS.btc, { coin: 'USDC', network: 'SOL' }, 60, 'So1', f as unknown as typeof fetch)
+    await createFixedOrder(PAY_IN_LEGS.btc, { coin: 'USDC', network: 'SOL' }, 60, 'So1', f as unknown as typeof fetch, false)
     expect(JSON.parse((f.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toMatchObject({ withdrawalAmount: 60, rateType: 'fixed', coinTo: 'USDC', networkTo: 'SOL' })
   })
   it('reads a live float rate keyless', async () => {
@@ -55,14 +55,14 @@ describe('exolix swap adapter', () => {
   })
   it('creates an order to the merchant address and parses deposit details', async () => {
     const f = vi.fn(() => json({ id: 'ex1', depositAddress: '84abc', amount: 0.2, coinFrom: { coinCode: 'XMR', network: 'XMR' }, amountTo: 100, coinTo: { coinCode: 'USDC' }, withdrawalAddress: '0xmerchant', status: 'wait' }))
-    const o = await createOrder(PAY_IN_LEGS.xmr, { coin: 'USDC', network: 'BASE' }, 0.2, ' 0xmerchant ', f as unknown as typeof fetch)
+    const o = await createOrder(PAY_IN_LEGS.xmr, { coin: 'USDC', network: 'BASE' }, 0.2, ' 0xmerchant ', f as unknown as typeof fetch, false)
     expect(o).toMatchObject({ id: 'ex1', depositAddress: '84abc', amount: 0.2, coinFrom: 'XMR', coinTo: 'USDC', status: 'wait' })
     const sent = JSON.parse((f.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)
     expect(sent).toMatchObject({ coinFrom: 'XMR', coinTo: 'USDC', networkTo: 'BASE', withdrawalAddress: '0xmerchant', rateType: 'float' })
   })
   it('rejects an empty payout address and API errors', async () => {
-    await expect(createOrder(PAY_IN_LEGS.btc, PAY_IN_LEGS.eth, 1, ' ')).rejects.toThrow('address')
-    await expect(createOrder(PAY_IN_LEGS.btc, PAY_IN_LEGS.eth, 1, 'x', (() => json({ error: 'Invalid withdrawal address' }, false, 422)) as unknown as typeof fetch)).rejects.toThrow('Invalid withdrawal address')
+    await expect(createOrder(PAY_IN_LEGS.btc, PAY_IN_LEGS.eth, 1, ' ', fetch, false)).rejects.toThrow('address')
+    await expect(createOrder(PAY_IN_LEGS.btc, PAY_IN_LEGS.eth, 1, 'x', (() => json({ error: 'Invalid withdrawal address' }, false, 422)) as unknown as typeof fetch, false)).rejects.toThrow('Invalid withdrawal address')
   })
   it('polls order status', async () => {
     const o = await orderStatus('ex1', (() => json({ id: 'ex1', depositAddress: 'd', amount: 1, coinFrom: 'BTC', amountTo: 2, coinTo: 'USDC', withdrawalAddress: 'w', status: 'success' })) as unknown as typeof fetch)

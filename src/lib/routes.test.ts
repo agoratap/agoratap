@@ -12,7 +12,7 @@ describe('routes', () => {
     const d = directQuote(USDC_SOL, USDC_SOL, 9.13, 'So1merchant')!
     expect(d).toMatchObject({ route: 'direct', sendAmount: 9.13, receiveAmount: 9.13, minUsd: 0, ok: true, depositAddress: 'So1merchant' })
     const f = vi.fn()
-    expect((await quoteAllRoutes({ from: USDC_SOL, to: USDC_SOL, receive: 9.13, fromUsd: 1, toUsd: 1 }, f as unknown as typeof fetch)).map((r) => r.route)).toEqual(['direct'])
+    expect((await quoteAllRoutes({ from: USDC_SOL, to: USDC_SOL, receive: 9.13, fromUsd: 1, toUsd: 1, merchantInEu: false }, f as unknown as typeof fetch)).map((r) => r.route)).toEqual(['direct'])
     expect(f).not.toHaveBeenCalled()
     expect(directQuote(USDC_SOL, USDC_BASE, 1)).toBeNull()
   })
@@ -24,20 +24,20 @@ describe('routes', () => {
   })
   it('reads a native quote with memo and recommended minimum (1e8 units)', async () => {
     const f = vi.fn(() => json({ expected_amount_out: '901000000', recommended_min_amount_in: '5100', inbound_address: 'bc1qvault', memo: '=:BASE.USDC:0xabc', expiry: 1 }))
-    const q = (await nativeQuote('maya', BTC, { coin: 'USDC', network: 'ARBITRUM' }, 0.00011, 80000, '0xabc', f as unknown as typeof fetch))!
+    const q = (await nativeQuote('maya', BTC, { coin: 'USDC', network: 'ARBITRUM' }, 0.00011, 80000, '0xabc', f as unknown as typeof fetch, false))!
     expect(q).toMatchObject({ ok: true, receiveAmount: 9.01, minIn: 0.000051, depositAddress: 'bc1qvault', memo: '=:BASE.USDC:0xabc' })
     expect(q.minUsd).toBeCloseTo(4.08, 2)
     expect(String(f.mock.calls[0][0])).toContain('amount=11000')
   })
   it('marks native quotes below the recommended minimum as not usable', async () => {
-    const q = (await nativeQuote('thor', BTC, USDC_BASE, 0.0001, 80000, '', (() => json({ expected_amount_out: '700000000', recommended_min_amount_in: '29622' })) as unknown as typeof fetch))!
+    const q = (await nativeQuote('thor', BTC, USDC_BASE, 0.0001, 80000, '', (() => json({ expected_amount_out: '700000000', recommended_min_amount_in: '29622' })) as unknown as typeof fetch, false))!
     expect(q.ok).toBe(false)
   })
   it('returns null when a chain has no pool for the pair', async () => {
-    expect(await nativeQuote('maya', { coin: 'XMR', network: 'XMR' }, USDC_BASE, 1, 500)).toBeNull()
+    expect(await nativeQuote('maya', { coin: 'XMR', network: 'XMR' }, USDC_BASE, 1, 500, '', fetch, false)).toBeNull()
   })
   it('surfaces halted trading as unusable', async () => {
-    const q = (await nativeQuote('thor', { coin: 'SOL', network: 'SOL' }, USDC_BASE, 0.1, 100, '', (() => json({ error: 'trading is halted' })) as unknown as typeof fetch))!
+    const q = (await nativeQuote('thor', { coin: 'SOL', network: 'SOL' }, USDC_BASE, 0.1, 100, '', (() => json({ error: 'trading is halted' })) as unknown as typeof fetch, false))!
     expect(q.ok).toBe(false)
     expect(q.note).toContain('halted')
   })
@@ -48,7 +48,7 @@ describe('routes', () => {
   it('quotes all providers in parallel for a €8.40 ETH payment', async () => {
     const f = vi.fn((u: string) => u.includes('thorchain') ? json({ expected_amount_out: '900000000', recommended_min_amount_in: '34000' })
       : u.includes('exolix') ? json({ fromAmount: 0.0039, minAmount: 0.0202, withdrawMin: 0 }) : json({ error: 'no pool' }))
-    const list = await quoteAllRoutes({ from: ETH, to: USDC_BASE, receive: 9.13, fromUsd: 2370, toUsd: 1 }, f as unknown as typeof fetch)
+    const list = await quoteAllRoutes({ from: ETH, to: USDC_BASE, receive: 9.13, fromUsd: 2370, toUsd: 1, merchantInEu: false }, f as unknown as typeof fetch)
     expect(list[0]).toMatchObject({ route: 'thor', ok: true })
     expect(list.find((x) => x.route === 'exolix')?.ok).toBe(false)
   })

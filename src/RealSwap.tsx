@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { QR_QUIET, qrMatrix } from './lib/qrMatrix'
 import { ORDER_DONE, ORDER_FAILED, SEED_PAYOUT_LEGS, createFixedOrder, fetchPayoutCurrencies, mergeLegs, orderStatus, orderStatusLabel, payoutAmountFor, searchLegs, usdPrice, type Leg, type PayoutLeg, type SwapOrder } from './lib/exolix'
 import { buildBtcMemoTx, buildEvmDeposit, isEvm, sendBtcUnisat, sendEvm, transferUri } from './lib/walletPay'
-import { nativeQuote, quoteAllRoutes, type RouteQuote } from './lib/routes'
-import { FIAT_PAYOUTS, FIAT_PAYOUT_LABEL, euPayoutBlockReason, payoutAllowed } from './lib/anyAsset'
+import { nativeQuote, quoteAllRoutes, sameLeg, type RouteQuote } from './lib/routes'
+import { EU_SWAP_NOT_AVAILABLE, FIAT_PAYOUTS, FIAT_PAYOUT_LABEL, euPayoutBlockReason, euSwapComingMessage, payoutAllowed } from './lib/anyAsset'
 
 function Qr({ text }: { text: string }) {
   const m = useMemo(() => qrMatrix(text), [text])
@@ -38,12 +38,27 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
     let live = true
     setRoutes(null); setError(''); setNative(null)
     if (blocked || !(eurNum > 0)) return
-    Promise.all([usdPrice(from), usdPrice(payout)])
-      .then(async ([fromUsd, toUsd]) => { const receive = payoutAmountFor(eurNum, toUsd); return { receive, fromUsd, list: await quoteAllRoutes({ from, to: payout, receive, fromUsd, toUsd }) } })
+    const load = async () => {
+      if (merchantInEu) {
+        if (!sameLeg(from, payout)) {
+          const list = await quoteAllRoutes({ from, to: payout, receive: 0, fromUsd: 0, toUsd: 1, merchantInEu: true })
+          return { receive: 0, fromUsd: 0, list }
+        }
+        const toUsd = await usdPrice(payout)
+        const receive = payoutAmountFor(eurNum, toUsd)
+        const list = await quoteAllRoutes({ from, to: payout, receive, fromUsd: toUsd, toUsd, merchantInEu: true })
+        return { receive, fromUsd: toUsd, list }
+      }
+      const [fromUsd, toUsd] = await Promise.all([usdPrice(from), usdPrice(payout)])
+      const receive = payoutAmountFor(eurNum, toUsd)
+      const list = await quoteAllRoutes({ from, to: payout, receive, fromUsd, toUsd, merchantInEu: false })
+      return { receive, fromUsd, list }
+    }
+    load()
       .then((r) => { if (live) { setRoutes(r); setRouteId(r.list.find((q) => q.ok)?.route ?? '') } })
       .catch((e) => { if (live) setError(`No live route for ${fromLabel} → ${payout.label}: ${e.message}`) })
     return () => { live = false }
-  }, [from.coin, from.network, payout.id, eurNum, blocked])
+  }, [from.coin, from.network, payout.id, payout.coin, payout.network, eurNum, blocked, merchantInEu])
 
   useEffect(() => {
     if (!order || ORDER_DONE.includes(order.status) || ORDER_FAILED.includes(order.status)) return
@@ -52,14 +67,16 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
   }, [order?.id, order?.status])
 
   const chosen = routes?.list.find((q) => q.route === routeId && q.ok) ?? null
+  const euNeedsSwap = merchantInEu && !!routes && !routes.list.some((q) => q.ok)
   const create = async () => {
     if (!routes || !chosen) return
+    if (merchantInEu && chosen.route !== 'direct') { setError(euSwapComingMessage(payout.label)); return }
     setBusy(true); setError('')
     try {
-      if (chosen.route === 'exolix') setOrder(await createFixedOrder(from, payout, routes.receive, address))
+      if (chosen.route === 'exolix') setOrder(await createFixedOrder(from, payout, routes.receive, address, fetch, merchantInEu))
       else if (chosen.route === 'direct') setNative({ ...chosen, depositAddress: address.trim() })
       else {
-        const q = await nativeQuote(chosen.route, from, payout, chosen.sendAmount, routes.fromUsd, address.trim())
+        const q = await nativeQuote(chosen.route, from, payout, chosen.sendAmount, routes.fromUsd, address.trim(), fetch, merchantInEu)
         if (!q || !q.ok || !q.depositAddress || !q.memo) throw new Error(q?.note ?? 'No route')
         setNative(q)
       }
@@ -81,7 +98,7 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
 
   return <div className="real-swap">
     <span className="section-kicker">PAY FOR REAL · LIVE SWAP</span>
-    <label><input type="checkbox" checked={merchantInEu} onChange={(e) => setMerchantInEu(e.target.checked)} /> Merchant is in the EU (excludes only USDT and privacy coins)</label>
+    <label><input type="checkbox" checked={merchantInEu} onChange={(e) => setMerchantInEu(e.target.checked)} /> Merchant is in the EU (direct transfer and practice mode; swap routes are not available for EU yet)</label>
     <label>Amount (EUR)<input inputMode="decimal" aria-label="Real amount in EUR" value={eur} onChange={(e) => setEur(e.target.value.replace(/[^0-9.]/g, ''))} /></label>
     <label>Merchant receives — search any asset or chain<input type="search" aria-label="Search payout asset" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="BTC, USDC Solana, LTC, EUR…" /></label>
     <div className="asset-list payout-list" role="listbox" aria-label="Merchant payout">
@@ -94,15 +111,18 @@ export function RealSwap({ from, fromLabel, eurAmount }: { from: Leg; fromLabel:
       {fiat.map((p) => <button key={p.id} disabled role="option" aria-selected={false}><div><strong>{p.symbol}</strong><small>{FIAT_PAYOUT_LABEL}</small></div></button>)}
     </div>
     <p>Payout: <strong data-testid="payout-picked">{payout.label}</strong>{blocked && ` — ${euPayoutBlockReason(payout.coin)}`}</p>
-    {routes && <div className="route-list" data-testid="real-quote" role="radiogroup" aria-label="Swap route">{routes.list.map((q) =>
-      <label key={q.route} className={q.ok ? '' : 'route-off'}><input type="radio" name="route" disabled={!q.ok} checked={routeId === q.route} onChange={() => setRouteId(q.route)} />
-        <span><strong>{q.label}</strong>{q.ok ? <> · send {q.sendAmount} {from.coin} → merchant {q.route === 'thor' || q.route === 'maya' ? '≈' : 'exactly'} {q.route === 'thor' || q.route === 'maya' ? q.receiveAmount.toFixed(6) : q.receiveAmount} {payout.coin}</> : <> · {q.note}</>}<small> · min {Number.isFinite(q.minUsd) ? `≈ $${q.minUsd.toFixed(2)}` : 'n/a'}</small></span></label>)}
+    {routes && <div className="route-list" data-testid="real-quote" role="radiogroup" aria-label="Swap route">{routes.list.map((q) => {
+      const held = merchantInEu && !q.ok && q.note === EU_SWAP_NOT_AVAILABLE
+      return <label key={q.route} className={q.ok ? '' : 'route-off'}><input type="radio" name="route" disabled={!q.ok} checked={routeId === q.route} onChange={() => setRouteId(q.route)} />
+        <span><strong>{q.label}</strong>{q.ok ? <> · send {q.sendAmount} {from.coin} → merchant {q.route === 'thor' || q.route === 'maya' ? '≈' : 'exactly'} {q.route === 'thor' || q.route === 'maya' ? q.receiveAmount.toFixed(6) : q.receiveAmount} {payout.coin}</> : <> · {held ? EU_SWAP_NOT_AVAILABLE : q.note}</>}{!held && <small> · min {Number.isFinite(q.minUsd) ? `≈ $${q.minUsd.toFixed(2)}` : 'n/a'}</small>}</span></label>
+    })}
       {routes.list.length === 0 && <p className="fine-print">No route for this pair.</p>}
     </div>}
-    {routes && !routes.list.some((q) => q.ok) && <p className="fine-print" role="alert">No route accepts this amount. Raise the amount or pick another payout (e.g. USDC on Base or Arbitrum).</p>}
+    {euNeedsSwap && <p className="fine-print" role="alert" data-testid="eu-swap-unavailable">{euSwapComingMessage(payout.label)}</p>}
+    {routes && !merchantInEu && !routes.list.some((q) => q.ok) && <p className="fine-print" role="alert">No route accepts this amount. Raise the amount or pick another payout (e.g. USDC on Base or Arbitrum).</p>}
     {error && <p className="fine-print" role="alert">{error}</p>}
     <label>Merchant payout address<input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${payout.label} address`} /></label>
-    <button className="secondary full" disabled={busy || !chosen || blocked || !address.trim()} onClick={create}>{busy ? 'Creating order…' : chosen?.route === 'direct' ? 'Show payment details' : 'Create real swap order'}</button>
+    <button className="secondary full" disabled={busy || !chosen || blocked || !address.trim() || (merchantInEu && chosen?.route !== 'direct')} onClick={create}>{busy ? 'Creating order…' : euNeedsSwap ? 'Swap not available for EU yet' : chosen?.route === 'direct' ? 'Show payment details' : 'Create real swap order'}</button>
   </div>
 }
 

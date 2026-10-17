@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Agora Pay',
         short_name: 'Agora Pay',
-        description: 'Early pilot. Any-in → any-out. Pay in anything you hold, including USDT on any chain and XMR via a swap route. Merchants receive any asset on any chain the swap route supports; EU merchants exclude only USDT (ESMA) and privacy coins like XMR (AMLR), non-EU merchants are unrestricted. Fiat bank payout via licensed partner is coming.',
+        description: 'Early pilot. Any-in → any-out. Pay in anything you hold, including USDT on any chain and XMR via a swap route. Merchants receive any asset on any chain the swap route supports; EU merchants: direct transfer in the merchant\'s asset or practice mode for every asset; real Exolix, MAYAChain and THORChain swaps are not available for EU yet (a MiCA-authorised partner is coming), and payouts exclude USDT (ESMA) and privacy coins like XMR (AMLR). Non-EU merchants: subject to local law and sanctions. Fiat bank payout via licensed partner is coming.',
         theme_color: '#123b2e',
         background_color: '#f3f1e8',
         display: 'standalone',
