@@ -1,9 +1,9 @@
 import { AlertTriangle, Info } from 'lucide-react'
-import { OFAC_LIST, screenAddress, type OfacList } from './lib/screening'
+import { EU_LIST, OFAC_LIST, screenAddressAll, type OfacList } from './lib/screening'
 
 /** Merchant-side address check. Warn only: it never disables a button or blocks a sale. Value lives in component memory only. */
-export function AddressCheck({ value, onChange, list = OFAC_LIST }: { value: string; onChange: (next: string) => void; list?: OfacList }) {
-  const result = screenAddress(value, list)
+export function AddressCheck({ value, onChange, list = OFAC_LIST, euList = EU_LIST }: { value: string; onChange: (next: string) => void; list?: OfacList; euList?: OfacList }) {
+  const result = screenAddressAll(value, [{ authority: 'OFAC', ...list }, { authority: 'EU', ...euList }])
   const warn = result.status === 'listed' || result.status === 'list-not-loaded'
   return (
     <div className="address-check">
@@ -18,7 +18,7 @@ export function AddressCheck({ value, onChange, list = OFAC_LIST }: { value: str
         </div>
       )}
       <small className="address-check-note">
-        OFAC list snapshot of {list.downloadedAt || 'unknown date'}; may be incomplete or outdated. Warning only, nothing is blocked. The address is checked in your browser and is not sent or stored.
+        OFAC list snapshot of {list.downloadedAt || 'unknown date'} and EU consolidated list snapshot of {euList.downloadedAt || 'unknown date'} (EU: wallet addresses only, names not checked); may be incomplete or outdated. Warning only, nothing is blocked. The address is checked in your browser and is not sent or stored.
       </small>
     </div>
   )

@@ -35,3 +35,14 @@ describe('AddressCheck (merchant UI)', () => {
     expect(html).toMatch(/may be incomplete or outdated/i)
   })
 })
+
+describe('AddressCheck EU list', () => {
+  it('warns for an address on the EU consolidated list and states EU names are not checked', () => {
+    const html = render('0x3051Ca7cB7f6C599fA2f27385AD75010cf0f2bbF')
+    expect(html).toContain('role="alert"')
+    expect(html).toMatch(/appears on the public EU sanctions list/)
+    expect(html).toMatch(/EU consolidated list snapshot of \d{4}-\d{2}-\d{2}/)
+    expect(html).toMatch(/names not checked/)
+    expect(html).not.toMatch(/disabled/)
+  })
+})

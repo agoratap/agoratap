@@ -1,0 +1,23 @@
+{
+ "note": "Snapshot of blockchain wallet addresses written in the public EU consolidated financial sanctions list (FSF). The EU list has no dedicated crypto field; only addresses in its remark text are included. Names and entities are not screened. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.",
+ "authority": "EU",
+ "source": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content?token=dG9rZW4tMjAxNw",
+ "downloadedAt": "2026-10-18",
+ "fileGenerationDate": "2026-10-15",
+ "count": 9,
+ "entities": {
+  "EU.12747.39": "Garantex",
+  "EU.13770.38": "Grinex"
+ },
+ "addresses": {
+  "0x002471b8a185f9980708d0eaec5b289714f56f8d": "ETH",
+  "0x3051ca7cb7f6c599fa2f27385ad75010cf0f2bbf": "BSC",
+  "3My1ffQr5qQzmq4aBFgRqwRYqfB5zPAt8t": "BTC",
+  "bc1qwtz3zv95x2flu4w26kgfepf529z50r2sqc5zml": "BTC",
+  "bc1qwxqxd25yk2dtw2ml04vxj9atq3huv4rdytf6vt": "BTC",
+  "TA1hsikRfsgGiW9nEBpT4tEXEySTNYLr2d": "TRX",
+  "TC8axQvzJEVR3NKN6mZnJtGy7537GEmh38": "TRX",
+  "TEcuHDQthTmULe8fFLUccBPpjfXaTmJuuD": "TRX",
+  "TNZxGWCwvsHr6JxQxzoeDXV597Yf7Zb7nV": "TRX"
+ }
+}
