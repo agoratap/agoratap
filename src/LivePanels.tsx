@@ -7,7 +7,7 @@ import { type PaymentState } from './lib/confirmation'
 import { parseRequestLink, walletTransferUri, type ParsedRequestLink } from './lib/requestLink'
 import { formatUsdc, isAddress, type OpenRequest } from './lib/chainRequest'
 import { secureRandom, type Random } from './lib/tagging'
-import { screenAddress } from './lib/screening'
+import { screenAddressAll } from './lib/screening'
 import { windowFrom } from './lib/confirmation'
 import { type TxClaim } from './lib/reference'
 import {
@@ -100,7 +100,7 @@ export function MerchantLive({ reader, random = secureRandom, store }: { reader?
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState('')
   const [desk, setDesk] = useState<MissedPaymentReport | null>(null)
-  const screen = screenAddress(merchant)
+  const screen = screenAddressAll(merchant)
   const prev = useRef<PaymentState | undefined>(undefined)
   const dirty = useRef(false)
 
@@ -291,7 +291,7 @@ export function BuyerLive({ reader, initialText = '' }: { reader?: ChainReader; 
   let parsed: ReturnType<typeof parseRequestLink> | null = null
   let parseError = ''
   if (text) { try { parsed = parseRequestLink(text) } catch (e) { parseError = (e as Error).message } }
-  const screen = parsed ? screenAddress(parsed.merchant) : null
+  const screen = parsed ? screenAddressAll(parsed.merchant) : null
   const testnetOnly = parsed !== null && parsed.chain !== CHAIN
 
   const start = async (hashText: string) => {
