@@ -46,3 +46,13 @@ describe('AddressCheck EU list', () => {
     expect(html).not.toMatch(/disabled/)
   })
 })
+
+describe('AddressCheck UK list', () => {
+  it('warns for an address on the UK Sanctions List and shows the UK snapshot date', () => {
+    const html = render('TCQqA58EmX6AnUZKPCogL2Q441B4ThbJGN')
+    expect(html).toContain('role="alert"')
+    expect(html).toMatch(/appears on the public UK sanctions list/)
+    expect(html).toMatch(/UK Sanctions List snapshot of \d{4}-\d{2}-\d{2}/)
+    expect(html).not.toMatch(/disabled/)
+  })
+})

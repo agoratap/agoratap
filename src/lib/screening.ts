@@ -2,9 +2,12 @@
 // - OFAC SDN digital-currency addresses (src/data/ofacAddresses.json, scripts/update-ofac.mjs)
 // - blockchain wallet addresses written in the EU consolidated financial sanctions list
 //   (src/data/euSanctionsAddresses.json, scripts/update-eu-sanctions.mjs). Addresses only; EU names/entities are not screened.
+// - crypto addresses written in the UK Sanctions List (FCDO; includes UN designations the UK implements)
+//   (src/data/ukSanctionsAddresses.json, scripts/update-uk-sanctions.mjs). Addresses only; UK names/entities are not screened.
 // Pure functions, no network access: snapshots are refreshed offline and committed. WARN ONLY: nothing here blocks anything; the merchant decides.
 import snapshot from '../data/ofacAddresses.json'
 import euSnapshot from '../data/euSanctionsAddresses.json'
+import ukSnapshot from '../data/ukSanctionsAddresses.json'
 
 export interface OfacList {
   /** Who publishes the list, used in messages. Defaults to OFAC when absent. */
@@ -19,7 +22,9 @@ export interface OfacList {
 export const OFAC_LIST: OfacList = { authority: 'OFAC', ...(snapshot as OfacList) }
 /** EU consolidated financial sanctions list: only the wallet addresses the EU writes in its remark text. */
 export const EU_LIST: OfacList = euSnapshot as OfacList
-export const DEFAULT_LISTS: readonly OfacList[] = [OFAC_LIST, EU_LIST]
+/** UK Sanctions List (FCDO): only the crypto addresses the UK writes in its free text. */
+export const UK_LIST: OfacList = ukSnapshot as OfacList
+export const DEFAULT_LISTS: readonly OfacList[] = [OFAC_LIST, EU_LIST, UK_LIST]
 
 export type ScreenResult =
   | { status: 'empty'; message: string }
@@ -58,7 +63,7 @@ export function screenAddress(address: string, list: OfacList = OFAC_LIST): Scre
 }
 
 /**
- * Screens one address against several lists (default: OFAC + EU) and folds the results into one.
+ * Screens one address against several lists (default: OFAC + EU + UK) and folds the results into one.
  * Any hit -> listed (every hit is named). Any list missing -> list-not-loaded (never reads as clean).
  * Otherwise not-listed, naming each snapshot.
  */
