@@ -21,6 +21,7 @@ import { ASSET_CATALOG, assetLabel, indicativeQuote } from './lib/anyAsset'
 import { PAY_IN_LEGS } from './lib/exolix'
 import { RealSwap } from './RealSwap'
 import { StallPay, StallSheet } from './StallSheet'
+import { outreachRefFromUrl, sprintMailto } from './lib/outreachRef'
 import { browserPageHref, initialStallScreen, nextStallLocation, payMerchantFromLocation } from './lib/stallSheet'
 
 const JURISDICTION_COPY = 'EU merchants: direct transfer in the merchant\'s asset or practice mode for every asset; real Exolix, MAYAChain and THORChain swaps are not available for EU yet (a MiCA-authorised partner is coming), and payouts exclude USDT (ESMA) and privacy coins like XMR (AMLR). Non-EU merchants: subject to local law and sanctions.'
@@ -163,7 +164,7 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
 
     <section className="pilot-offer">
       <div><span className="section-kicker">MERCHANT PILOT</span><h2>A pay-link on a phone. Nothing to install.</h2></div>
-      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href="mailto:enccmail@proton.me?subject=Agora%20Pay%20merchant%20readiness%20sprint">Request a readiness sprint <ArrowRight size={18} /></a></div>
+      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href={sprintMailto(typeof window === 'undefined' ? null : outreachRefFromUrl(window.location.href))}>Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
