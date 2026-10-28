@@ -164,7 +164,7 @@ function Home({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
 
     <section className="pilot-offer">
       <div><span className="section-kicker">MERCHANT PILOT</span><h2>A pay-link on a phone. Nothing to install.</h2></div>
-      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href={sprintMailto(outreachRefFromUrl(location.href))}>Request a readiness sprint <ArrowRight size={18} /></a></div>
+      <div><p>The same gesture for an online shop, an offline store, and a street stall: the seller shows a QR or pay-link. The payer sends crypto they hold. This browser session is practice only. No order is sent anywhere, and no funds are held here.</p><p><strong>Commercial pricing starts only after measured merchant evidence.</strong></p><a className="primary" href={sprintMailto(typeof window === 'undefined' ? null : outreachRefFromUrl(window.location.href))}>Request a readiness sprint <ArrowRight size={18} /></a></div>
     </section>
 
     <section className="how-section">
