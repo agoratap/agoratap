@@ -12,7 +12,7 @@ import {
   stallPayLink,
 } from './lib/stallSheet'
 
-function QrSvg({ matrix }: { matrix: QrMatrix }) {
+export function QrSvg({ matrix }: { matrix: QrMatrix }) {
   const n = matrix.size + QR_QUIET * 2
   const cells: ReactElement[] = []
   for (let y = 0; y < matrix.size; y++) {

@@ -59,3 +59,7 @@ Bogdan
 ## Tracked demo links (added 28.10.2026, for Marketing Machine follow-ups)
 Add `?ref=<tag>` to the demo link. The tag (lowercase a–z, 0–9, `-`, max 40) is copied into the subject of the "Request a readiness sprint" email as `[ref:<tag>]`. No cookies, no analytics, nothing stored or sent. The C1 emails already sent (40/40) used the plain link, so this applies only to future follow-ups and channels.
 Convention: `c1-btcmap-<BTC Map id>` per merchant, `c2-<community>` for communities. Example: https://agoratap.github.io/agoratap/?ref=c1-btcmap-608
+
+## Tagged link + QR generator
+
+Open https://agoratap.github.io/agoratap/#outreach, type the tag (c1-btcmap-<id> or c2-<community>), copy the link or print the QR. The QR is generated in the browser; nothing is stored or sent.

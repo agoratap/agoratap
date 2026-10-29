@@ -22,11 +22,13 @@ import { PAY_IN_LEGS } from './lib/exolix'
 import { RealSwap } from './RealSwap'
 import { StallPay, StallSheet } from './StallSheet'
 import { outreachRefFromUrl, sprintMailto } from './lib/outreachRef'
+import { isOutreachRoute } from './lib/outreachLinkPage'
+import { OutreachLink } from './OutreachLink'
 import { browserPageHref, initialStallScreen, nextStallLocation, payMerchantFromLocation } from './lib/stallSheet'
 
 const JURISDICTION_COPY = 'EU merchants: direct transfer in the merchant\'s asset or practice mode for every asset; real Exolix, MAYAChain and THORChain swaps are not available for EU yet (a MiCA-authorised partner is coming), and payouts exclude USDT (ESMA) and privacy coins like XMR (AMLR). Non-EU merchants: subject to local law and sanctions.'
 
-type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture' | 'stall' | 'pay'
+type Screen = 'home' | 'buyer' | 'merchant' | 'pilot' | 'architecture' | 'stall' | 'pay' | 'outreach'
 type BuyerStep = 'wallet' | 'quote' | 'tap' | 'receipt' | 'privacy'
 type MerchantStep = 'amount' | 'request' | 'complete' | 'receipts'
 
@@ -73,6 +75,7 @@ const when = (date: string) => new Intl.DateTimeFormat('en-IE', { hour: '2-digit
 function DemoLabel() { return <span className="demo-label"><span />EARLY PILOT · PRACTICE</span> }
 
 function initialScreen(): Screen {
+  if (typeof location !== 'undefined' && isOutreachRoute(location)) return 'outreach'
   return initialStallScreen() ?? 'home'
 }
 
@@ -82,6 +85,7 @@ function App() {
     setScreenRaw(next)
     if (typeof history === 'undefined' || typeof location === 'undefined') return
     const current = new URL(location.href).toString()
+    if (next !== 'outreach' && isOutreachRoute(location)) { history.replaceState(null, '', location.pathname + location.search); return }
     const href = nextStallLocation(location.href, next === 'stall' || next === 'pay' ? next : 'other')
     if (href === current) return
     if (next === 'stall') history.pushState(null, '', href)
@@ -125,6 +129,7 @@ function App() {
         {screen === 'merchant' && <Merchant data={data} setData={setData} onBack={() => setScreen('home')} onStall={() => setScreen('stall')} />}
         {screen === 'stall' && <StallSheet pageHref={browserPageHref()} onBack={() => setScreen('merchant')} />}
         {screen === 'pay' && <StallPay merchantName={payMerchantFromLocation()} onBack={() => setScreen('home')} />}
+        {screen === 'outreach' && <OutreachLink onBack={() => setScreen('home')} />}
         {screen === 'pilot' && <MerchantPilot onBack={() => setScreen('home')} />}
         {screen === 'architecture' && <Architecture onBack={() => setScreen('home')} />}
       </main>
