@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { qrMatrix } from './lib/qrMatrix'
-import { readOutreachTag } from './lib/outreachLinkPage'
+import { batchCsvHref, readOutreachBatch, readOutreachTag } from './lib/outreachLinkPage'
 import { QrSvg } from './StallSheet'
 
-export function OutreachLink({ initialTag = '', onBack }: { initialTag?: string; onBack: () => void }) {
+export function OutreachLink({ initialTag = '', initialBatch = '', onBack }: { initialTag?: string; initialBatch?: string; onBack: () => void }) {
   const [tag, setTag] = useState(initialTag)
+  const [batch, setBatch] = useState(initialBatch)
+  const parsedBatch = useMemo(() => readOutreachBatch(batch), [batch])
   const parsed = useMemo(() => readOutreachTag(tag), [tag])
   const matrix = useMemo(() => (parsed.link ? qrMatrix(parsed.link) : null), [parsed.link])
   return <div className="stall-page">
@@ -17,6 +19,10 @@ export function OutreachLink({ initialTag = '', onBack }: { initialTag?: string;
       <input id="outreach-tag" aria-label="Outreach tag" value={tag} maxLength={40} autoComplete="off" onChange={(event) => setTag(event.target.value)} />
       {parsed.error && <p className="stall-error" role="alert">{parsed.error}</p>}
       {parsed.link && <button type="button" className="primary" onClick={() => window.print()}>Print link and QR</button>}
+      <label htmlFor="outreach-batch">Batch: many tags, one per line</label>
+      <textarea id="outreach-batch" aria-label="Outreach tags batch" rows={5} value={batch} onChange={(event) => setBatch(event.target.value)} />
+      {parsedBatch.invalid.length > 0 && <p className="stall-error" role="alert">Skipped invalid: {parsedBatch.invalid.join(', ')}</p>}
+      {parsedBatch.rows.length > 0 && <p><a className="primary" href={batchCsvHref(parsedBatch.rows)} download="agora-outreach-links.csv">Download CSV ({parsedBatch.rows.length})</a> <button type="button" className="text-link" onClick={() => window.print()}>Print all QRs</button></p>}
     </div>
     <article className="stall-sheet" aria-label="Tagged demo link">
       <p className="stall-kicker">AGORA PAY</p>
@@ -24,5 +30,11 @@ export function OutreachLink({ initialTag = '', onBack }: { initialTag?: string;
       {parsed.link && <p className="stall-link">{parsed.link}</p>}
       <p className="stall-pilot">Early pilot — no live funds. Network fee: simulated. Subject to local law and sanctions.</p>
     </article>
+    {parsedBatch.rows.map((r) => <article key={r.tag} className="stall-sheet" aria-label={`Tagged demo link ${r.tag}`}>
+      <p className="stall-kicker">AGORA PAY · {r.tag}</p>
+      <QrSvg matrix={qrMatrix(r.link)} />
+      <p className="stall-link">{r.link}</p>
+      <p className="stall-pilot">Early pilot — no live funds. Network fee: simulated. Subject to local law and sanctions.</p>
+    </article>)}
   </div>
 }
