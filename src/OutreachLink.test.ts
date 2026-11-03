@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -79,5 +80,15 @@ describe('outreach link page', () => {
     expect((html.match(/Subject to local law and sanctions/g) ?? []).length).toBe(3)
     expect(html).toContain('download="agora-outreach-links.csv"')
     expect(html).toContain('?ref=c2-bitcoin-bucuresti')
+  })
+  it('batch print: hides the empty single-tag placeholder card, single mode still prints', () => {
+    const batchHtml = renderToStaticMarkup(createElement(OutreachLink, { initialBatch: 'c2-a\nc2-b', onBack: () => {} }))
+    expect(batchHtml).toMatch(/class="stall-sheet no-print" aria-label="Tagged demo link"/)
+    const singleHtml = renderToStaticMarkup(createElement(OutreachLink, { initialTag: 'c2-a', initialBatch: 'c2-b', onBack: () => {} }))
+    expect(singleHtml).not.toContain('no-print')
+    const emptyHtml = renderToStaticMarkup(createElement(OutreachLink, { onBack: () => {} }))
+    expect(emptyHtml).not.toContain('no-print')
+    const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8')
+    expect(css.slice(css.lastIndexOf('@media print'))).toMatch(/\.stall-sheet\.no-print \{ display: none !important; \}/)
   })
 })

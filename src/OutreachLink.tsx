@@ -24,7 +24,7 @@ export function OutreachLink({ initialTag = '', initialBatch = '', onBack }: { i
       {parsedBatch.invalid.length > 0 && <p className="stall-error" role="alert">Skipped invalid: {parsedBatch.invalid.join(', ')}</p>}
       {parsedBatch.rows.length > 0 && <p><a className="primary" href={batchCsvHref(parsedBatch.rows)} download="agora-outreach-links.csv">Download CSV ({parsedBatch.rows.length})</a> <button type="button" className="text-link" onClick={() => window.print()}>Print all QRs</button></p>}
     </div>
-    <article className="stall-sheet" aria-label="Tagged demo link">
+    <article className={!matrix && parsedBatch.rows.length > 0 ? 'stall-sheet no-print' : 'stall-sheet'} aria-label="Tagged demo link">
       <p className="stall-kicker">AGORA PAY</p>
       {matrix ? <QrSvg matrix={matrix} /> : <p className="stall-placeholder">Enter a tag. The QR is the tagged demo link.</p>}
       {parsed.link && <p className="stall-link">{parsed.link}</p>}
