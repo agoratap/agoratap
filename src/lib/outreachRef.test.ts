@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { outreachRefFromUrl, sprintMailto, trackedDemoLink } from './outreachRef'
+import { outreachRefFromUrl, refNotice, sprintMailto, trackedDemoLink } from './outreachRef'
 
 describe('outreach ref', () => {
   it('reads a clean ref from the demo link', () => {
@@ -19,5 +19,9 @@ describe('outreach ref', () => {
   it('builds tracked demo links and refuses bad refs', () => {
     expect(trackedDemoLink('C1-BTCMAP-608')).toBe('https://agoratap.github.io/agoratap/?ref=c1-btcmap-608')
     expect(() => trackedDemoLink('a b')).toThrow()
+  })
+  it('shows a visible ref notice only when a ref is present', () => {
+    expect(refNotice(null)).toBeNull()
+    expect(refNotice('c1-btcmap-608')).toBe('Personal link: c1-btcmap-608. Your readiness sprint request will carry this tag.')
   })
 })

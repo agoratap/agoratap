@@ -28,3 +28,8 @@ export function trackedDemoLink(ref: string): string {
   if (!REF_PATTERN.test(clean)) throw new Error(`invalid ref: ${ref}`)
   return `${DEMO_URL}?ref=${clean}`
 }
+
+/** Visible note on the landing page so a merchant sees the link was made for them. */
+export function refNotice(ref: string | null): string | null {
+  return ref ? `Personal link: ${ref}. Your readiness sprint request will carry this tag.` : null
+}
