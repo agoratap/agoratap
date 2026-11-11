@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain .mjs build script, no types
 import { parseUkSanctionsCsv, buildUkSnapshot, extractUkAddresses, base58CheckOk, bech32Ok } from '../../scripts/update-uk-sanctions.mjs'
-import { EU_LIST, OFAC_LIST, UK_LIST, screenAddress, screenAddressAll, type OfacList } from './screening'
+import { EU_LIST, OFAC_LIST, UK_LIST, screenAddress, screenAddressAll, screenNameAll, type OfacList } from './screening'
 
 // Offline fixture in the shape of the UK Sanctions List CSV (report-date line, then header), with the glued
 // addresses the real file contains (two EVM and two Tron addresses written with no separator).
@@ -55,7 +55,7 @@ describe('UK Sanctions List parser', () => {
     const snap = buildUkSnapshot(CSV, '2026-10-21', 'https://x')
     expect(snap.authority).toBe('UK')
     expect(snap.count).toBe(10)
-    expect(snap.note).toMatch(/names and entities are not screened/i)
+    expect(snap.note).toMatch(/names of entries that publish wallet addresses are screened/i)
     expect(() => buildUkSnapshot('Report Date: 16-Oct-2026\r\n' + HEADER + '\r\n1,A,B,,Primary Name,"crypto TCQqA58EmX6AnUZKPCogL2Q441B4ThbJGN"', '2026-10-21')).toThrow(/implausibly small/)
   })
 })
@@ -87,5 +87,19 @@ describe('UK screening alongside OFAC and EU', () => {
     const r = screenAddressAll('0x00000000000000000000000000000000000000aa', [OFAC_LIST, EU_LIST, empty])
     expect(r.status).toBe('list-not-loaded')
     expect(r.message).toMatch(/UK sanctions list not loaded/)
+  })
+})
+
+describe('UK name screening from committed snapshot', () => {
+  it('warns on EXMO as a UK name and also matches GARANTEX EUROPE OU via the short name', () => {
+    const exmo = screenNameAll('EXMO')
+    expect(exmo.status).toBe('listed')
+    expect(exmo.message).toMatch(/appears on the public UK sanctions list/)
+    expect(exmo.message).toMatch(/EXMO EXCHANGE LIMITED/)
+    const both = screenNameAll('Garantex')
+    expect(both.status).toBe('listed')
+    expect(both.message).toMatch(/EU sanctions list/)
+    expect(both.message).toMatch(/UK sanctions list/)
+    expect(both.message).toMatch(/GARANTEX EUROPE OU/)
   })
 })

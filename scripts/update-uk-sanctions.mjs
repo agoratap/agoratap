@@ -6,7 +6,7 @@
 // The UK file has no dedicated crypto field. Addresses appear in free text, sometimes glued together with no separator
 // ("...Bc1810xAE05...", "...54DxTHGR..."), so the extractor scans for fixed-shape addresses and keeps a base58 or bech32
 // candidate only if its checksum is valid. Only cells that mention crypto / wallet / digital (currency) address are read.
-// Names and entities are NOT screened. If the download fails or the result is implausible, the last good snapshot is kept.
+// Names of entries that publish wallet addresses are written into the snapshot and screened in the app; the rest of the UK name list is not included. If the download fails or the result is implausible, the last good snapshot is kept.
 // Usage: node scripts/update-uk-sanctions.mjs [--from-file path/to/UK-Sanctions-List.csv]
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -127,7 +127,7 @@ export function buildUkSnapshot(csvText, date, source = UK_LIST_URL) {
   if (count < MIN_PLAUSIBLE) throw new Error(`implausibly small list (${count}); not replacing last good list`)
   const sorted = Object.fromEntries(Object.entries(addresses).sort(([a], [b]) => a.localeCompare(b)))
   return {
-    note: 'Snapshot of crypto addresses written in the public UK Sanctions List (FCDO, which includes the UN designations the UK implements). The UK list has no dedicated crypto field; only checksum-valid addresses found in its free text are included. Names and entities are not screened. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.',
+    note: 'Snapshot of crypto addresses written in the public UK Sanctions List (FCDO, which includes the UN designations the UK implements). The UK list has no dedicated crypto field; only checksum-valid addresses found in its free text are included. Names of entries that publish wallet addresses are screened from this snapshot; the rest of the UK name list is not included. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.',
     authority: 'UK',
     source,
     downloadedAt: date,
