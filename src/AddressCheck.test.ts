@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { AddressCheck } from './AddressCheck'
 import { OFAC_LIST, type OfacList } from './lib/screening'
 
-const render = (value: string, list?: OfacList) =>
-  renderToStaticMarkup(createElement(AddressCheck, { value, onChange: () => {}, list }))
+const render = (value: string, list?: OfacList, name = '') =>
+  renderToStaticMarkup(createElement(AddressCheck, { value, onChange: () => {}, list, name, onNameChange: () => {} }))
 const listed = Object.keys(OFAC_LIST.addresses).find((a) => /^0x[0-9a-f]{40}$/.test(a))!
 
 describe('AddressCheck (merchant UI)', () => {
@@ -37,12 +37,13 @@ describe('AddressCheck (merchant UI)', () => {
 })
 
 describe('AddressCheck EU list', () => {
-  it('warns for an address on the EU consolidated list and states EU names are not checked', () => {
+  it('warns for an address on the EU consolidated list and states EU and UK names of wallet-publishing entries are checked', () => {
     const html = render('0x3051Ca7cB7f6C599fA2f27385AD75010cf0f2bbF')
     expect(html).toContain('role="alert"')
     expect(html).toMatch(/appears on the public EU sanctions list/)
     expect(html).toMatch(/EU consolidated list snapshot of \d{4}-\d{2}-\d{2}/)
-    expect(html).toMatch(/names not checked/)
+    expect(html).toMatch(/names of list entries that publish wallet addresses/)
+    expect(html).not.toMatch(/names not checked/)
     expect(html).not.toMatch(/disabled/)
   })
 })
@@ -54,5 +55,26 @@ describe('AddressCheck UK list', () => {
     expect(html).toMatch(/appears on the public UK sanctions list/)
     expect(html).toMatch(/UK Sanctions List snapshot of \d{4}-\d{2}-\d{2}/)
     expect(html).not.toMatch(/disabled/)
+  })
+})
+
+describe('AddressCheck name field', () => {
+  it('renders a visible warning, not a block, for a listed name', () => {
+    const html = render('', undefined, 'garantex')
+    expect(html).toContain('role="alert"')
+    expect(html).toMatch(/appears on the public EU sanctions list/)
+    expect(html).toMatch(/Garantex/)
+    expect(html).toMatch(/You decide/)
+    expect(html).not.toMatch(/disabled/)
+  })
+
+  it('warns on a UK listed name and does not warn on a legal-form word alone', () => {
+    const hit = render('', undefined, 'EXMO')
+    expect(hit).toContain('role="alert"')
+    expect(hit).toMatch(/appears on the public UK sanctions list/)
+    expect(hit).toMatch(/EXMO EXCHANGE LIMITED/)
+    const miss = render('', undefined, 'Limited')
+    expect(miss).not.toContain('role="alert"')
+    expect(miss).toMatch(/Not on the UK snapshot/)
   })
 })

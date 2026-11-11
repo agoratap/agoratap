@@ -1,5 +1,5 @@
 {
- "note": "Snapshot of crypto addresses written in the public UK Sanctions List (FCDO, which includes the UN designations the UK implements). The UK list has no dedicated crypto field; only checksum-valid addresses found in its free text are included. Names and entities are not screened. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.",
+ "note": "Snapshot of crypto addresses written in the public UK Sanctions List (FCDO, which includes the UN designations the UK implements). The UK list has no dedicated crypto field; only checksum-valid addresses found in its free text are included. Names of entries that publish wallet addresses are screened from this snapshot; the rest of the UK name list is not included. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.",
  "authority": "UK",
  "source": "https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv",
  "downloadedAt": "2026-10-21",

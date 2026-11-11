@@ -5,7 +5,7 @@
 // src/data/euSanctionsAddresses.json, which is committed as a static snapshot.
 // The EU file has no dedicated crypto-address field: addresses appear as free text such as
 // "Known blockchain wallet addresses:\nETH: 0x...\nBTC: bc1...". Only those are extracted.
-// Names and entities are NOT screened (the OFAC module does not screen names either).
+// Names of entries that publish wallet addresses are written into the snapshot and screened in the app; the rest of the EU name list is not included.
 // If the download fails or yields an implausible result, the last good snapshot is kept untouched.
 // Usage: node scripts/update-eu-sanctions.mjs [--from-file path/to/eu.csv]
 import { execFileSync } from 'node:child_process'
@@ -115,7 +115,7 @@ export function buildEuSnapshot(csvText, date, source = EU_FSF_URL) {
   if (count < MIN_PLAUSIBLE) throw new Error(`implausibly small list (${count}); not replacing last good list`)
   const sorted = Object.fromEntries(Object.entries(addresses).sort(([a], [b]) => a.localeCompare(b)))
   return {
-    note: 'Snapshot of blockchain wallet addresses written in the public EU consolidated financial sanctions list (FSF). The EU list has no dedicated crypto field; only addresses in its remark text are included. Names and entities are not screened. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.',
+    note: 'Snapshot of blockchain wallet addresses written in the public EU consolidated financial sanctions list (FSF). The EU list has no dedicated crypto field; only addresses in its remark text are included. Names of entries that publish wallet addresses are screened from this snapshot; the rest of the EU name list is not included. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.',
     authority: 'EU',
     source,
     downloadedAt: date,

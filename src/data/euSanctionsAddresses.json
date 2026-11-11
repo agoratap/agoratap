@@ -1,5 +1,5 @@
 {
- "note": "Snapshot of blockchain wallet addresses written in the public EU consolidated financial sanctions list (FSF). The EU list has no dedicated crypto field; only addresses in its remark text are included. Names and entities are not screened. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.",
+ "note": "Snapshot of blockchain wallet addresses written in the public EU consolidated financial sanctions list (FSF). The EU list has no dedicated crypto field; only addresses in its remark text are included. Names of entries that publish wallet addresses are screened from this snapshot; the rest of the EU name list is not included. May be incomplete or outdated. Not legal advice. Absence from this list does not mean an address is lawful or safe.",
  "authority": "EU",
  "source": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content?token=dG9rZW4tMjAxNw",
  "downloadedAt": "2026-10-18",

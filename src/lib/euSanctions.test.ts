@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain .mjs build script, no types
 import { parseEuFsfCsv, buildEuSnapshot, extractWalletAddresses, parseCsv } from '../../scripts/update-eu-sanctions.mjs'
-import { EU_LIST, OFAC_LIST, screenAddress, screenAddressAll, type OfacList } from './screening'
+import { EU_LIST, OFAC_LIST, screenAddress, screenAddressAll, screenName, screenNameAll, type OfacList } from './screening'
 
 // Offline fixture in the shape of the EU FSF CSV (semicolon-separated, literal "\n" inside remark text).
 const HEADER = 'fileGenerationDate;Entity_LogicalId;Entity_EU_ReferenceNumber;NameAlias_WholeName;NameAlias_Remark;Address_Remark'
@@ -46,7 +46,7 @@ describe('EU consolidated sanctions list (FSF) parser', () => {
     expect(snap.authority).toBe('EU')
     expect(snap.count).toBe(6)
     expect(snap.fileGenerationDate).toBe('2026-10-15')
-    expect(snap.note).toMatch(/names and entities are not screened/i)
+    expect(snap.note).toMatch(/names of entries that publish wallet addresses are screened/i)
     expect(() => buildEuSnapshot(HEADER + '\r\n15/10/2026;1;EU.9;Z;;', '2026-10-18')).toThrow(/implausibly small/)
   })
 })
@@ -92,5 +92,14 @@ describe('EU screening alongside OFAC', () => {
     expect(r.status).toBe('list-not-loaded')
     expect(r.message).toMatch(/EU sanctions list not loaded/)
     expect(screenAddressAll('  ').status).toBe('empty')
+  })
+})
+
+describe('EU name screening from committed snapshot', () => {
+  it('warns on Garantex as an EU name even when no address is entered', () => {
+    const r = screenNameAll('Garantex')
+    expect(r.status).toBe('listed')
+    expect(r.message).toMatch(/appears on the public EU sanctions list \(Garantex/)
+    expect(screenName('not-a-listed-exchange', EU_LIST).status).toBe('not-listed')
   })
 })
