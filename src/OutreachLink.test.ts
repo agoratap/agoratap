@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -76,19 +75,29 @@ describe('outreach link page', () => {
   it('batch render: one QR sheet per tag with locked copy, plus CSV download', () => {
     const html = renderToStaticMarkup(createElement(OutreachLink, { initialBatch: 'c1-btcmap-608\nc2-bitcoin-bucuresti', onBack: () => {} }))
     expect((html.match(/<svg/g) ?? []).length).toBe(2)
-    expect((html.match(/Network fee: simulated/g) ?? []).length).toBe(3)
-    expect((html.match(/Subject to local law and sanctions/g) ?? []).length).toBe(3)
+    expect((html.match(/Network fee: simulated/g) ?? []).length).toBe(2)
+    expect((html.match(/Subject to local law and sanctions/g) ?? []).length).toBe(2)
+    expect(html).not.toContain('Enter a tag. The QR is the tagged demo link.')
+    expect(html).not.toContain('aria-label="Tagged demo link"')
+    expect(html).toContain('aria-label="Tagged demo link c1-btcmap-608"')
     expect(html).toContain('download="agora-outreach-links.csv"')
     expect(html).toContain('?ref=c2-bitcoin-bucuresti')
   })
-  it('batch print: hides the empty single-tag placeholder card, single mode still prints', () => {
+  it('batch: hides the empty single-tag placeholder on screen when batch QRs exist; single and empty modes still show', () => {
     const batchHtml = renderToStaticMarkup(createElement(OutreachLink, { initialBatch: 'c2-a\nc2-b', onBack: () => {} }))
-    expect(batchHtml).toMatch(/class="stall-sheet no-print" aria-label="Tagged demo link"/)
+    expect(batchHtml).not.toContain('Enter a tag. The QR is the tagged demo link.')
+    expect(batchHtml).not.toContain('aria-label="Tagged demo link"')
+    expect(batchHtml).toContain('aria-label="Tagged demo link c2-a"')
+    expect(batchHtml).toContain('aria-label="Tagged demo link c2-b"')
+    expect((batchHtml.match(/<svg/g) ?? []).length).toBe(2)
     const singleHtml = renderToStaticMarkup(createElement(OutreachLink, { initialTag: 'c2-a', initialBatch: 'c2-b', onBack: () => {} }))
+    expect(singleHtml).toContain('aria-label="Tagged demo link"')
     expect(singleHtml).not.toContain('no-print')
+    expect(singleHtml).toContain('?ref=c2-a')
     const emptyHtml = renderToStaticMarkup(createElement(OutreachLink, { onBack: () => {} }))
-    expect(emptyHtml).not.toContain('no-print')
-    const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8')
-    expect(css.slice(css.lastIndexOf('@media print'))).toMatch(/\.stall-sheet\.no-print \{ display: none !important; \}/)
+    expect(emptyHtml).toContain('Enter a tag. The QR is the tagged demo link.')
+    expect(emptyHtml).toContain('Network fee: simulated')
+    expect(emptyHtml).toContain('Subject to local law and sanctions')
+    expect(emptyHtml).not.toContain('<svg')
   })
 })
