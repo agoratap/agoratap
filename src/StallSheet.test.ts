@@ -9,6 +9,8 @@ import { QR_QUIET, qrMatrix } from './lib/qrMatrix'
 import {
   STALL_INSTRUCTION_EN,
   STALL_INSTRUCTION_RO,
+  STALL_PAY_INSTRUCTION_EN,
+  STALL_PAY_INSTRUCTION_RO,
   merchantNameFromPayLink,
   nextStallLocation,
   stallPayLink,
@@ -131,7 +133,10 @@ describe('market stall sheet', () => {
 
     const pay = renderToStaticMarkup(createElement(StallPay, { merchantName: NAME, onBack: () => {} }))
     expect(pay).toContain(NAME)
-    expect(pay).toContain('Scan and pay with any crypto you hold')
+    expect(pay).toContain(STALL_PAY_INSTRUCTION_EN)
+    expect(pay).toContain(STALL_PAY_INSTRUCTION_RO)
+    expect(pay).not.toContain(STALL_INSTRUCTION_EN)
+    expect(pay).not.toContain(STALL_INSTRUCTION_RO)
     expect(pay).toContain('any-in → any-out')
     expect(pay).not.toContain('<svg')
     expect(pay).not.toMatch(/USDT/i)
@@ -149,12 +154,34 @@ describe('market stall sheet', () => {
     withLocation({ hash: '', search: '?pay=Piața+Obor', href: 'https://example.com/agoratap/?pay=Piața+Obor' }, () => {
       const html = renderToStaticMarkup(createElement(App))
       expect(html).toContain('Piața Obor')
-      expect(html).toContain('Scan and pay with any crypto you hold')
+      expect(html).toContain(STALL_PAY_INSTRUCTION_EN)
+      expect(html).toContain(STALL_PAY_INSTRUCTION_RO)
+      expect(html).not.toContain(STALL_INSTRUCTION_EN)
+      expect(html).not.toContain(STALL_INSTRUCTION_RO)
       expect(html).toContain('Prefer USDC, EURC, BTC or ETH.')
       expect(html).not.toMatch(/USDT/)
       expect(html).not.toContain('stall-qr')
       expect(html).not.toContain('QR code of the merchant pay-link')
     })
+  })
+
+  it('tells a payer who already opened the pay-link to pay, not to scan again', () => {
+    expect(STALL_PAY_INSTRUCTION_EN).toBe('Pay with any crypto you hold')
+    expect(STALL_PAY_INSTRUCTION_RO).toBe('Plătește cu ce crypto ai')
+    expect(STALL_INSTRUCTION_EN).toBe('Scan and pay with any crypto you hold')
+    expect(STALL_INSTRUCTION_RO).toBe('Scanează și plătește cu ce crypto ai')
+
+    const printed = renderToStaticMarkup(createElement(StallSheet, { pageHref: PAGE, initialName: NAME, onBack: () => {} }))
+    expect(printed).toContain(STALL_INSTRUCTION_EN)
+    expect(printed).toContain(STALL_INSTRUCTION_RO)
+    expect(printed).not.toContain(`>${STALL_PAY_INSTRUCTION_EN}<`)
+    expect(printed).not.toContain(`>${STALL_PAY_INSTRUCTION_RO}<`)
+
+    const opened = renderToStaticMarkup(createElement(StallPay, { merchantName: NAME, onBack: () => {} }))
+    expect(opened).toContain(`>${STALL_PAY_INSTRUCTION_EN}<`)
+    expect(opened).toContain(`>${STALL_PAY_INSTRUCTION_RO}<`)
+    expect(opened).not.toContain(STALL_INSTRUCTION_EN)
+    expect(opened).not.toContain(STALL_INSTRUCTION_RO)
   })
 
   it('draws QR modules in the same coordinates the encoder paints', () => {

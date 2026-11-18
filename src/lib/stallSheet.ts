@@ -4,6 +4,9 @@
 
 export const STALL_INSTRUCTION_RO = 'Scanează și plătește cu ce crypto ai'
 export const STALL_INSTRUCTION_EN = 'Scan and pay with any crypto you hold'
+// After the QR is opened, "scan" is the wrong next step.
+export const STALL_PAY_INSTRUCTION_RO = 'Plătește cu ce crypto ai'
+export const STALL_PAY_INSTRUCTION_EN = 'Pay with any crypto you hold'
 export const STALL_ASSET_LINE = 'Prefer USDC, EURC, BTC or ETH.'
 export const STALL_ANY_IN = 'any-in → any-out'
 export const STALL_ROUTE_LINE = `${STALL_ANY_IN}. You pay with crypto you hold. The merchant receives on the payout rail they prefer.`
