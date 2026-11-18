@@ -6,6 +6,8 @@ import {
   STALL_BASE_LINE,
   STALL_INSTRUCTION_EN,
   STALL_INSTRUCTION_RO,
+  STALL_PAY_INSTRUCTION_EN,
+  STALL_PAY_INSTRUCTION_RO,
   STALL_PILOT_LINE,
   STALL_ROUTE_LINE,
   normalizeMerchantName,
@@ -29,13 +31,13 @@ export function QrSvg({ matrix }: { matrix: QrMatrix }) {
   )
 }
 
-function SheetCopy({ name, qr }: { name: string; qr?: ReactElement }) {
+function SheetCopy({ name, qr, instructionRo = STALL_INSTRUCTION_RO, instructionEn = STALL_INSTRUCTION_EN }: { name: string; qr?: ReactElement; instructionRo?: string; instructionEn?: string }) {
   return <>
     <p className="stall-kicker">AGORA PAY</p>
     <h1>{name}</h1>
     {qr}
-    <p className="stall-instruction" lang="ro">{STALL_INSTRUCTION_RO}</p>
-    <p className="stall-instruction" lang="en">{STALL_INSTRUCTION_EN}</p>
+    <p className="stall-instruction" lang="ro">{instructionRo}</p>
+    <p className="stall-instruction" lang="en">{instructionEn}</p>
     <p className="stall-route">{STALL_ROUTE_LINE}</p>
     <p className="stall-assets">{STALL_ASSET_LINE}</p>
     <p className="stall-base">{STALL_BASE_LINE}</p>
@@ -109,7 +111,7 @@ export function StallPay({ merchantName, onBack }: { merchantName: string; onBac
       <button type="button" className="text-link" onClick={onBack}>Back</button>
     </div>
     <article className="stall-sheet" aria-label="Merchant pay-link">
-      {problem ? <p className="stall-error" role="alert">{problem}</p> : <SheetCopy name={name} />}
+      {problem ? <p className="stall-error" role="alert">{problem}</p> : <SheetCopy name={name} instructionRo={STALL_PAY_INSTRUCTION_RO} instructionEn={STALL_PAY_INSTRUCTION_EN} />}
     </article>
     {!problem && <WalletConnectButton />}
   </div>
